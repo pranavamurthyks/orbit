@@ -3,10 +3,13 @@ const router = express.Router();
 const axios = require('axios');
 const Groq = require('groq-sdk');
 
-const groq = new Groq({ apiKey: process.env.GROQ_API_KEY });
-
 router.get('/', async (req, res) => {
     try {
+        if (!process.env.GROQ_API_KEY) {
+            return res.status(500).json({ message: 'GROQ_API_KEY is not configured' });
+        }
+
+        const groq = new Groq({ apiKey: process.env.GROQ_API_KEY });
         const launchRes = await axios.get('https://ll.thespacedevs.com/2.2.0/launch/upcoming/?limit=1&format=json');
         const launch = launchRes.data.results[0];
 
