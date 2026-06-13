@@ -1,0 +1,501 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <title>VR WORLD &mdash; Space Phenomena Simulator</title>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Sora:wght@400;600;800&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+
+  <link rel="stylesheet" href="vr.css" />
+  <link rel="stylesheet" href="orbit-ai.css" />
+
+  <script src="https://aframe.io/releases/1.5.0/aframe.min.js"></script>
+  <!-- Components MUST be registered before a-scene is parsed by A-Frame -->
+  <script src="vr_components.js"></script>
+</head>
+
+<body>
+  <canvas id="starCanvas"></canvas>
+  <div class="space-cursor" id="spaceCursor" aria-hidden="true">
+    <span class="rocket-flame"></span>
+    <span class="rocket-body"></span>
+  </div>
+
+  <nav class="navbar">
+    <a class="nav-logo" href="photography.html">✦ Orbit</a>
+    <div class="nav-links">
+      <a href="loading.html">Launch</a>
+      <a href="workshops.html">Dashboard</a>
+      <a href="photography.html">Photography</a>
+      <a href="iss.html">ISS Tracker</a>
+      <a href="vr.html" class="active">VR</a>
+      <a href="long-horizon-exchange.html">Time Dilation</a>
+      <a href="community.html">Community</a>
+    </div>
+    <div class="nav-user">
+      <span class="stardust-pill">✦ <span id="navStardust">1,240</span> pts</span>
+      <button class="avatar" id="profileBtn" type="button" aria-label="Open profile menu" aria-expanded="false">CG</button>
+      <div class="profile-menu hidden" id="profileMenu">
+        <div class="profile-head">
+          <div class="profile-avatar">CG</div>
+          <div>
+            <div class="profile-name">Cosmic Guest</div>
+            <div class="profile-role">Explorer Level 3</div>
+          </div>
+        </div>
+        <div class="profile-balance">
+          <span>Stardust Balance</span>
+          <strong><span id="profileStardust">1,240</span> pts</strong>
+        </div>
+        <div class="profile-stats">
+          <div><strong>6</strong><span>Targets</span></div>
+          <div><strong>3</strong><span>Visited</span></div>
+          <div><strong>12</strong><span>Saved</span></div>
+        </div>
+        <div class="profile-actions">
+          <button type="button" data-profile-action="missions">VR Missions</button>
+          <button type="button" data-profile-action="saved">Saved Targets</button>
+          <button type="button" data-profile-action="settings">Profile Settings</button>
+        </div>
+        <button class="profile-signout" type="button" data-profile-action="signout">Sign out</button>
+      </div>
+    </div>
+  </nav>
+
+  <main id="menu-overlay">
+    <header class="menu-header">
+      <p class="menu-eyebrow">MISSION SELECT &mdash; 6 ACTIVE TARGETS</p>
+      <h1 class="menu-title">VR WORLD</h1>
+      <p class="menu-subtitle">
+        Pick a destination below. On desktop, drag to look around.
+        On a headset, tap <strong>Enter VR</strong> for full immersion.
+      </p>
+    </header>
+    <section id="menu-grid" class="menu-grid" aria-label="Select a simulation"></section>
+    <footer class="menu-footer">
+      <span class="footer-dot"></span>
+      Built with A-Frame &middot; WebXR ready &middot; works on desktop, mobile &amp; headset
+    </footer>
+  </main>
+
+  <div id="hud" class="hud hidden">
+    <button id="back-btn" class="hud-btn" aria-label="Back to mission select">
+      <span class="hud-btn-icon">&larr;</span> MISSION SELECT
+    </button>
+    <div class="hud-readout">
+      <span class="hud-label">TARGET</span>
+      <span id="hud-title" class="hud-value">&mdash;</span>
+    </div>
+  </div>
+
+  <a-scene
+    id="vr-scene"
+    class="hidden-scene"
+    embedded
+    loading-screen="dotsColor: #5EE6D9; backgroundColor: #05070D"
+    vr-mode-ui="enabled: true"
+    renderer="colorManagement: true; physicallyCorrectLights: true">
+
+    <!-- No external texture assets — all planet surfaces are generated
+         procedurally by vr_components.js (see makeMoonTexture etc.)
+         This means zero network dependencies and zero 404s. -->
+    <a-assets timeout="1000"></a-assets>
+
+    <!-- CAMERA RIG -->
+    <a-entity id="cameraRig" position="0 1.6 0">
+      <a-entity id="head" camera look-controls="reverseMouseDrag: false" wasd-controls="acceleration: 40">
+        <a-entity cursor="fuse: false"
+                   position="0 0 -1"
+                   raycaster="objects: .clickable; far: 10"
+                   geometry="primitive: ring; radiusInner: 0.006; radiusOuter: 0.01"
+                   material="color: #5EE6D9; shader: flat"
+                   visible="false">
+        </a-entity>
+        <a-entity id="vr-hud" position="0 -0.35 -1.2" visible="false">
+          <a-plane class="clickable" id="vr-back-btn"
+                   width="0.7" height="0.18"
+                   color="#0B0F1A" opacity="0.85"
+                   text="value: < MISSION SELECT; align: center; color: #5EE6D9; width: 1.6; font: mozillavr">
+          </a-plane>
+          <a-plane width="0.7" height="0.001" position="0 0.1 0" color="#5EE6D9"></a-plane>
+          <a-text id="vr-hud-title" value="" align="center" position="0 0.13 0"
+                  color="#FFFFFF" width="2.2"></a-text>
+        </a-entity>
+      </a-entity>
+    </a-entity>
+
+    <a-entity laser-controls="hand: left" raycaster="objects: .clickable"></a-entity>
+    <a-entity laser-controls="hand: right" raycaster="objects: .clickable"></a-entity>
+
+    <!-- =====================================================
+         SCENE 1 — SATURN'S RINGS (from within the ring plane)
+         Proper a-ring geometry + layered rings + Saturn body
+         ===================================================== -->
+    <a-entity id="scene-saturn" class="scene-group" visible="false">
+      <a-sky color="#020408"></a-sky>
+      <a-light type="ambient" color="#334455" intensity="0.5"></a-light>
+      <!-- Sun as a point light source far away -->
+      <a-light type="point" color="#FFF8E7" intensity="2.5" position="-200 30 -200" distance="600"></a-light>
+
+      <!-- Saturn body looming in the background -->
+      <a-entity position="0 -18 -90" rotation="0 15 27">
+        <a-sphere pro-tex="name: saturn" radius="35" segments-height="64" segments-width="64"
+                  animation="property: rotation; to: 0 360 0; dur: 40000; loop: true; easing: linear">
+        </a-sphere>
+        <!-- Ring system as stacked a-ring primitives — much more solid/visible than particles -->
+        <a-ring radius-inner="38" radius-outer="44" rotation="-90 0 0"
+                pro-tex="name: saturnRing"
+                material="side: double; transparent: true; opacity: 0.9; shader: flat"></a-ring>
+        <a-ring radius-inner="44" radius-outer="52" rotation="-90 0 0"
+                pro-tex="name: saturnRing"
+                material="side: double; transparent: true; opacity: 0.75; shader: flat"></a-ring>
+        <a-ring radius-inner="52" radius-outer="62" rotation="-90 0 0"
+                pro-tex="name: saturnRing"
+                material="side: double; transparent: true; opacity: 0.5; shader: flat"></a-ring>
+        <a-ring radius-inner="62" radius-outer="68" rotation="-90 0 0"
+                material="color: #9C8B6E; side: double; transparent: true; opacity: 0.25; shader: flat"></a-ring>
+      </a-entity>
+
+      <!-- Ice chunks floating nearby — you're inside the ring plane -->
+      <a-entity position="0 0 0"
+                animation="property: rotation; to: 0 360 0; dur: 120000; loop: true; easing: linear"
+                particle-system="
+                  preset: dust;
+                  color: #E8DFC8, #FFFFFF, #B0A890;
+                  particleCount: 3000;
+                  size: 0.08, 0.6;
+                  velocityValue: 0 0 0;
+                  velocitySpread: 0.02 0.02 0.02;
+                  positionSpread: 40 0.6 40;
+                  maxAge: 12;
+                  blending: normal">
+      </a-entity>
+
+      <!-- A few large close-up ice boulders for scale -->
+      <a-sphere position="4 0.3 -6" radius="0.4" color="#D8D0C0" roughness="0.9" metalness="0.0"></a-sphere>
+      <a-sphere position="-6 -0.2 -8" radius="0.25" color="#C8C0B0" roughness="0.9"></a-sphere>
+      <a-sphere position="2 0.5 -12" radius="0.6" color="#E0D8C8" roughness="0.9"></a-sphere>
+      <a-sphere position="-3 -0.4 -5" radius="0.18" color="#D0C8B8" roughness="0.9"></a-sphere>
+
+      <a-text value="INSIDE SATURN'S RING PLANE" position="0 2.4 -5" align="center"
+              color="#D8C9A8" width="4" opacity="0.8"></a-text>
+    </a-entity>
+
+    <!-- =====================================================
+         SCENE 2 — APOLLO 11: TRANQUILITY BASE
+         ===================================================== -->
+    <a-entity id="scene-moon" class="scene-group" visible="false">
+      <a-sky color="#000005"></a-sky>
+      <!-- Stars behind the black sky -->
+      <a-entity particle-system="
+        preset: dust;
+        color: #FFFFFF, #AACCFF, #FFEECC;
+        particleCount: 800;
+        size: 0.02, 0.06;
+        velocityValue: 0 0 0;
+        velocitySpread: 0 0 0;
+        positionSpread: 150 80 150;
+        maxAge: 99999;
+        blending: additive">
+      </a-entity>
+      <a-light type="ambient" color="#555566" intensity="0.35"></a-light>
+      <a-light type="directional" color="#FFFFFF" intensity="1.4" position="1 0.4 1"></a-light>
+
+      <a-sphere id="moonGround" pro-tex="name: moon" radius="60" position="0 -60 0"
+                segments-height="64" segments-width="64" rotation="0 60 0"></a-sphere>
+
+      <!-- Earth hanging in the lunar sky -->
+      <a-sphere pro-tex="name: earth" radius="6" position="-18 14 -70" rotation="0 90 0"
+                animation="property: rotation; to: 0 450 0; dur: 120000; loop: true; easing: linear">
+      </a-sphere>
+      <a-text value="EARTH" position="-18 18.5 -70" align="center" color="#9FD4FF" width="5" face-camera></a-text>
+
+      <a-entity position="2.5 0.02 -3.5">
+        <a-cylinder radius="0.02" height="1.4" position="0 0.7 0" color="#CCCCCC"></a-cylinder>
+        <a-plane width="0.5" height="0.35" position="0.27 1.2 0" color="#FF3B30"
+                 material="side: double"></a-plane>
+        <a-text value="TRANQUILITY BASE&#10;Apollo 11 Landing Site" align="center"
+                position="0 1.7 0" color="#EEEEEE" width="3"></a-text>
+      </a-entity>
+
+      <!-- Lunar module descent stage -->
+      <a-entity position="-3 0.05 -5" rotation="0 30 0">
+        <a-box width="1.8" height="0.8" depth="1.8" color="#D4C97A" roughness="0.8" metalness="0.3"></a-box>
+        <a-cylinder radius="0.08" height="0.6" position="0.8 -0.7 0.8" rotation="0 0 0" color="#AAA"></a-cylinder>
+        <a-cylinder radius="0.08" height="0.6" position="-0.8 -0.7 0.8" color="#AAA"></a-cylinder>
+        <a-cylinder radius="0.08" height="0.6" position="0.8 -0.7 -0.8" color="#AAA"></a-cylinder>
+        <a-cylinder radius="0.08" height="0.6" position="-0.8 -0.7 -0.8" color="#AAA"></a-cylinder>
+        <a-text value="EAGLE&#10;Lunar Module" align="center" position="0 0.9 0" color="#FFE9A0" width="3"></a-text>
+      </a-entity>
+    </a-entity>
+
+    <!-- =====================================================
+         SCENE 3 — BLACK HOLE (gravitational lensing effect)
+         Procedural rings + accretion disk + lensing distortion
+         ===================================================== -->
+    <a-entity id="scene-blackhole" class="scene-group" visible="false">
+      <a-sky color="#000000"></a-sky>
+      <a-light type="ambient" color="#110011" intensity="0.2"></a-light>
+
+      <!-- Star field -->
+      <a-entity particle-system="
+        preset: dust;
+        color: #FFFFFF, #AACCFF, #FFAAAA;
+        particleCount: 1200;
+        size: 0.015, 0.05;
+        velocityValue: 0 0 0;
+        velocitySpread: 0 0 0;
+        positionSpread: 200 120 200;
+        maxAge: 99999;
+        blending: additive">
+      </a-entity>
+
+      <!-- Event horizon — pure black sphere -->
+      <a-sphere position="0 1.6 -18" radius="3.5" color="#000000"
+                material="shader: flat; color: #000000">
+      </a-sphere>
+
+      <!-- Photon sphere — faint blue-white ring of bent light -->
+      <a-ring position="0 1.6 -18" radius-inner="3.6" radius-outer="4.0" rotation="70 0 0"
+              material="color: #AADDFF; shader: flat; transparent: true; opacity: 0.6; side: double">
+      </a-ring>
+
+      <!-- Accretion disk — layered glowing rings, tilted ~15° -->
+      <a-ring position="0 1.6 -18" radius-inner="4.2" radius-outer="6.5" rotation="80 0 20"
+              material="color: #FF6600; emissive: #FF4400; emissiveIntensity: 1; shader: flat; transparent: true; opacity: 0.95; side: double">
+      </a-ring>
+      <a-ring position="0 1.6 -18" radius-inner="6.5" radius-outer="9.0" rotation="80 0 20"
+              material="color: #FF3300; emissive: #CC2200; emissiveIntensity: 0.8; shader: flat; transparent: true; opacity: 0.75; side: double">
+      </a-ring>
+      <a-ring position="0 1.6 -18" radius-inner="9.0" radius-outer="12.5" rotation="80 0 20"
+              material="color: #882200; emissive: #661100; emissiveIntensity: 0.5; shader: flat; transparent: true; opacity: 0.5; side: double">
+      </a-ring>
+      <!-- Doppler brightened near side -->
+      <a-ring position="0 1.6 -18" radius-inner="4.2" radius-outer="7.5" rotation="80 0 20"
+              material="color: #FFAA00; emissive: #FF8800; emissiveIntensity: 1.2; shader: flat; transparent: true; opacity: 0.4; side: double">
+      </a-ring>
+
+      <!-- Orange glow light from accretion disk -->
+      <a-light type="point" color="#FF5500" intensity="1.8" position="0 -1 -18" distance="40"></a-light>
+      <a-light type="point" color="#FF8800" intensity="1.2" position="6 3 -18" distance="30"></a-light>
+
+      <!-- Relativistic jet -->
+      <a-cylinder position="0 10 -18" radius="0.15" height="14" color="#AACCFF"
+                  material="emissive: #8899FF; emissiveIntensity: 1.5; shader: flat; transparent: true; opacity: 0.6">
+      </a-cylinder>
+      <a-cylinder position="0 -7 -18" radius="0.15" height="10" rotation="180 0 0" color="#AACCFF"
+                  material="emissive: #8899FF; emissiveIntensity: 1.5; shader: flat; transparent: true; opacity: 0.6">
+      </a-cylinder>
+
+      <a-text value="STELLAR BLACK HOLE&#10;Gravitational Lensing + Accretion Disk" position="0 5.5 -14"
+              align="center" color="#FF9966" width="5" opacity="0.9"></a-text>
+    </a-entity>
+
+    <!-- =====================================================
+         SCENE 4 — PULSAR (rotating neutron star)
+         Sweeping lighthouse beams + glowing compact star
+         ===================================================== -->
+    <a-entity id="scene-pulsar" class="scene-group" visible="false">
+      <a-sky color="#000205"></a-sky>
+      <a-light type="ambient" color="#001122" intensity="0.3"></a-light>
+
+      <!-- Star field -->
+      <a-entity particle-system="
+        preset: dust;
+        color: #FFFFFF, #CCDDFF, #FFCCFF;
+        particleCount: 1000;
+        size: 0.012, 0.04;
+        velocityValue: 0 0 0;
+        velocitySpread: 0 0 0;
+        positionSpread: 180 100 180;
+        maxAge: 99999;
+        blending: additive">
+      </a-entity>
+
+      <!-- Pulsar body — compact, brilliant -->
+      <a-sphere position="0 1.6 -12" radius="0.8"
+                material="color: #DDEEFF; emissive: #AACCFF; emissiveIntensity: 3; shader: flat">
+      </a-sphere>
+      <!-- Hot spot glow -->
+      <a-light type="point" color="#AACCFF" intensity="3" position="0 1.6 -12" distance="60"></a-light>
+
+      <!-- Rotating beam entity — spins the beams around -->
+      <a-entity position="0 1.6 -12"
+                animation="property: rotation; to: 0 360 0; dur: 1800; loop: true; easing: linear">
+        <!-- Beam 1 -->
+        <a-cylinder radius="0.12" height="60" position="0 30 0" rotation="0 0 0"
+                    material="color: #88CCFF; emissive: #5599FF; emissiveIntensity: 2; shader: flat; transparent: true; opacity: 0.5">
+        </a-cylinder>
+        <!-- Beam 2 opposite -->
+        <a-cylinder radius="0.12" height="60" position="0 -30 0" rotation="0 0 0"
+                    material="color: #88CCFF; emissive: #5599FF; emissiveIntensity: 2; shader: flat; transparent: true; opacity: 0.5">
+        </a-cylinder>
+        <!-- Cone flare at tip of beam 1 -->
+        <a-cone radius-bottom="1.5" radius-top="0" height="4" position="0 60 0" rotation="0 0 0"
+                material="color: #AADDFF; emissive: #88BBFF; emissiveIntensity: 2; shader: flat; transparent: true; opacity: 0.35">
+        </a-cone>
+        <a-cone radius-bottom="1.5" radius-top="0" height="4" position="0 -60 0" rotation="180 0 0"
+                material="color: #AADDFF; emissive: #88BBFF; emissiveIntensity: 2; shader: flat; transparent: true; opacity: 0.35">
+        </a-cone>
+      </a-entity>
+
+      <!-- Equatorial glow disk — magnetosphere -->
+      <a-ring position="0 1.6 -12" radius-inner="1.0" radius-outer="3.5" rotation="90 0 0"
+              material="color: #3366FF; emissive: #2244CC; emissiveIntensity: 1; shader: flat; transparent: true; opacity: 0.4; side: double">
+      </a-ring>
+
+      <!-- Companion star being stripped (common in X-ray pulsars) -->
+      <a-sphere position="10 1.6 -12" radius="1.8" color="#FFAA44"
+                material="emissive: #FF8822; emissiveIntensity: 0.5"
+                animation="property: position; from: 10 1.6 -12; to: -10 1.6 -12; dir: alternate; dur: 20000; loop: true; easing: linear">
+      </a-sphere>
+
+      <a-text value="MILLISECOND PULSAR&#10;716 rotations per second" position="0 4.5 -9"
+              align="center" color="#88CCFF" width="5" opacity="0.9"></a-text>
+    </a-entity>
+
+    <!-- =====================================================
+         SCENE 5 — ASTEROID BENNU (OSIRIS-REx)
+         ===================================================== -->
+    <a-entity id="scene-bennu" class="scene-group" visible="false">
+      <a-sky color="#000005"></a-sky>
+      <a-light type="ambient" color="#444444" intensity="0.5"></a-light>
+      <a-light type="directional" color="#FFFFFF" intensity="1.4" position="3 2 1"></a-light>
+
+      <a-entity position="0 1.6 -10"
+                 irregular-asteroid="radius: 4.5; detail: 3; displacement: 0.45; seed: 7"
+                 animation="property: rotation; to: 30 360 10; dur: 70000; loop: true; easing: linear">
+      </a-entity>
+
+      <a-entity position="0 1.6 -3">
+        <a-box width="0.4" height="0.4" depth="0.4" color="#DADFE3" metalness="0.7" roughness="0.3"></a-box>
+        <a-plane width="1.2" height="0.5" position="0.85 0 0" color="#1A1F2E" material="side: double"></a-plane>
+        <a-plane width="1.2" height="0.5" position="-0.85 0 0" color="#1A1F2E" material="side: double"></a-plane>
+        <a-text value="OSIRIS-REx&#10;Proximity Operations — Bennu" align="center"
+                position="0 0.7 0" color="#DADFE3" width="3"></a-text>
+      </a-entity>
+    </a-entity>
+
+    <!-- =====================================================
+         SCENE 6 — THE SOLAR SYSTEM
+         ===================================================== -->
+    <a-entity id="scene-solarsystem" class="scene-group" visible="false" position="0 0 -45">
+      <a-sky color="#000005"></a-sky>
+      <a-light type="ambient" color="#111122" intensity="0.3"></a-light>
+
+      <a-text value="THE SOLAR SYSTEM&#10;Fly with WASD to approach any planet"
+              position="0 4 30" align="center" color="#FFFFFF" width="6" opacity="0.8"></a-text>
+
+      <a-entity id="sun" position="0 1.6 0">
+        <!-- Sun with emissive glow -->
+        <a-sphere radius="3.2" color="#FDB813"
+                  material="emissive: #FF9900; emissiveIntensity: 1.5; shader: flat"
+                  animation="property: rotation; to: 0 360 0; dur: 50000; loop: true; easing: linear">
+        </a-sphere>
+        <!-- Outer corona glow -->
+        <a-sphere radius="3.6" color="#FF8800"
+                  material="emissive: #FF6600; emissiveIntensity: 0.8; shader: flat; transparent: true; opacity: 0.25">
+        </a-sphere>
+        <a-light type="point" color="#FFF4D6" intensity="3" distance="300"></a-light>
+        <a-text value="SUN" position="0 4.8 0" face-camera color="#FFE9B0" width="4"></a-text>
+
+        <!-- Orbit rings -->
+        <a-ring radius-inner="5.97"  radius-outer="6.03"  rotation="-90 0 0" color="#FFFFFF" opacity="0.08" material="side: double; shader: flat"></a-ring>
+        <a-ring radius-inner="7.97"  radius-outer="8.03"  rotation="-90 0 0" color="#FFFFFF" opacity="0.08" material="side: double; shader: flat"></a-ring>
+        <a-ring radius-inner="10.47" radius-outer="10.53" rotation="-90 0 0" color="#FFFFFF" opacity="0.08" material="side: double; shader: flat"></a-ring>
+        <a-ring radius-inner="12.97" radius-outer="13.03" rotation="-90 0 0" color="#FFFFFF" opacity="0.08" material="side: double; shader: flat"></a-ring>
+        <a-ring radius-inner="17.95" radius-outer="18.05" rotation="-90 0 0" color="#FFFFFF" opacity="0.08" material="side: double; shader: flat"></a-ring>
+        <a-ring radius-inner="22.93" radius-outer="23.07" rotation="-90 0 0" color="#FFFFFF" opacity="0.08" material="side: double; shader: flat"></a-ring>
+        <a-ring radius-inner="26.92" radius-outer="27.08" rotation="-90 0 0" color="#FFFFFF" opacity="0.08" material="side: double; shader: flat"></a-ring>
+        <a-ring radius-inner="29.90" radius-outer="30.10" rotation="-90 0 0" color="#FFFFFF" opacity="0.08" material="side: double; shader: flat"></a-ring>
+
+        <!-- MERCURY -->
+        <a-entity animation="property: rotation; to: 0 360 0; dur: 9000; loop: true; easing: linear">
+          <a-sphere position="6 0 0" radius="0.18" color="#9C9286" roughness="0.9"
+                    animation="property: rotation; to: 0 360 0; dur: 4000; loop: true; easing: linear"></a-sphere>
+          <a-text value="Mercury" position="6 0.5 0" face-camera color="#CCBBAA" width="3"></a-text>
+        </a-entity>
+
+        <!-- VENUS -->
+        <a-entity animation="property: rotation; to: 0 360 0; dur: 14000; loop: true; easing: linear">
+          <a-sphere position="8 0 0" radius="0.28" color="#E8C39E"
+                    material="emissive: #AA8855; emissiveIntensity: 0.2"
+                    animation="property: rotation; to: 0 -360 0; dur: 9000; loop: true; easing: linear"></a-sphere>
+          <a-text value="Venus" position="8 0.65 0" face-camera color="#E8C39E" width="3"></a-text>
+        </a-entity>
+
+        <!-- EARTH + Moon -->
+        <a-entity animation="property: rotation; to: 0 360 0; dur: 20000; loop: true; easing: linear">
+          <a-entity position="10.5 0 0">
+            <a-sphere radius="0.32" pro-tex="name: earth"
+                      material="emissive: #001133; emissiveIntensity: 0.15"
+                      animation="property: rotation; to: 0 360 0; dur: 3000; loop: true; easing: linear"></a-sphere>
+            <a-text value="Earth" position="0 0.65 0" face-camera color="#9FD4FF" width="3"></a-text>
+            <a-entity animation="property: rotation; to: 0 360 0; dur: 3500; loop: true; easing: linear">
+              <a-sphere position="0.7 0 0" radius="0.08" pro-tex="name: moon"></a-sphere>
+            </a-entity>
+          </a-entity>
+        </a-entity>
+
+        <!-- MARS -->
+        <a-entity animation="property: rotation; to: 0 360 0; dur: 32000; loop: true; easing: linear">
+          <a-sphere position="13 0 0" radius="0.22" pro-tex="name: mars"
+                    material="emissive: #331100; emissiveIntensity: 0.1"
+                    animation="property: rotation; to: 0 360 0; dur: 3100; loop: true; easing: linear"></a-sphere>
+          <a-text value="Mars" position="13 0.55 0" face-camera color="#FF9966" width="3"></a-text>
+        </a-entity>
+
+        <!-- JUPITER -->
+        <a-entity animation="property: rotation; to: 0 360 0; dur: 90000; loop: true; easing: linear">
+          <a-sphere position="18 0 0" radius="1.1" pro-tex="name: jupiter" color="#C9A66B"
+                    animation="property: rotation; to: 0 360 0; dur: 1800; loop: true; easing: linear"></a-sphere>
+          <a-text value="Jupiter" position="18 1.7 0" face-camera color="#C9A66B" width="3"></a-text>
+        </a-entity>
+
+        <!-- SATURN + visible rings -->
+        <a-entity animation="property: rotation; to: 0 360 0; dur: 160000; loop: true; easing: linear">
+          <a-entity position="23 0 0" rotation="0 0 27">
+            <a-sphere radius="1.0" pro-tex="name: saturn"
+                      animation="property: rotation; to: 0 360 0; dur: 2000; loop: true; easing: linear"></a-sphere>
+            <a-ring radius-inner="1.4" radius-outer="2.0" pro-tex="name: saturnRing" rotation="-90 0 0"
+                    material="side: double; transparent: true; opacity: 0.9; shader: flat"></a-ring>
+            <a-ring radius-inner="2.0" radius-outer="2.6" pro-tex="name: saturnRing" rotation="-90 0 0"
+                    material="side: double; transparent: true; opacity: 0.7; shader: flat"></a-ring>
+            <a-ring radius-inner="2.6" radius-outer="3.1" pro-tex="name: saturnRing" rotation="-90 0 0"
+                    material="side: double; transparent: true; opacity: 0.4; shader: flat"></a-ring>
+          </a-entity>
+          <a-text value="Saturn" position="23 2 0" face-camera color="#D8B26B" width="3"></a-text>
+        </a-entity>
+
+        <!-- URANUS -->
+        <a-entity animation="property: rotation; to: 0 360 0; dur: 280000; loop: true; easing: linear">
+          <a-sphere position="27 0 0" radius="0.6" color="#AFDDE9"
+                    material="emissive: #224455; emissiveIntensity: 0.2">
+          </a-sphere>
+          <!-- Uranus ring (it has rings, tilted ~98°) -->
+          <a-ring position="27 0 0" radius-inner="0.75" radius-outer="0.9" rotation="8 0 0"
+                  material="color: #AFDDE9; side: double; transparent: true; opacity: 0.5; shader: flat"></a-ring>
+          <a-text value="Uranus" position="27 1.1 0" face-camera color="#AFDDE9" width="3"></a-text>
+        </a-entity>
+
+        <!-- NEPTUNE -->
+        <a-entity animation="property: rotation; to: 0 360 0; dur: 400000; loop: true; easing: linear">
+          <a-sphere position="30 0 0" radius="0.58" color="#4169E1"
+                    material="emissive: #112266; emissiveIntensity: 0.3">
+          </a-sphere>
+          <a-text value="Neptune" position="30 1.1 0" face-camera color="#7799FF" width="3"></a-text>
+        </a-entity>
+
+      </a-entity>
+    </a-entity>
+
+  </a-scene>
+
+  <script src="vr.js"></script>
+  <script src="orbit-ai.js"></script>
+
+</body>
+</html>

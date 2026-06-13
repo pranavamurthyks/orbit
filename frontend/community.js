@@ -1,0 +1,558 @@
+const pages = {
+  landing: document.getElementById('page-landing'),
+  host: document.getElementById('page-host'),
+  participant: document.getElementById('page-participant'),
+};
+
+const canvas = document.getElementById('starCanvas');
+const ctx = canvas.getContext('2d');
+const spaceCursor = document.getElementById('spaceCursor');
+const profileBtn = document.getElementById('profileBtn');
+const profileMenu = document.getElementById('profileMenu');
+const profileStardust = document.getElementById('profileStardust');
+const routeNames = Object.keys(pages);
+const toast = document.getElementById('toast');
+const navStardust = document.getElementById('navStardust');
+const mapPicker = document.getElementById('mapPicker');
+const mapIcon = document.getElementById('mapIcon');
+const mapLabel = document.getElementById('mapLabel');
+const mapCoords = document.getElementById('mapCoords');
+const fundingToggle = document.getElementById('fundingToggle');
+const fundingOptions = document.getElementById('fundingOptions');
+const goalRow = document.getElementById('goalRow');
+const goalAmount = document.getElementById('goalAmount');
+const hostForm = document.getElementById('hostForm');
+const sessionList = document.getElementById('sessionList');
+const hostProgressLabel = document.getElementById('hostProgressLabel');
+const hostStageLabel = document.getElementById('hostStageLabel');
+const cosmosScene = document.getElementById('cosmosScene');
+const progressPercent = document.getElementById('progressPercent');
+const sessionEmpty = document.getElementById('sessionEmpty');
+const sessionContent = document.getElementById('sessionContent');
+const detailTitle = document.getElementById('detailTitle');
+const detailDesc = document.getElementById('detailDesc');
+const detailFacts = document.getElementById('detailFacts');
+const detailCost = document.getElementById('detailCost');
+const joinForm = document.getElementById('joinForm');
+const bringingInput = document.getElementById('bringingInput');
+const contributionAmount = document.getElementById('contributionAmount');
+const paymentLink = document.getElementById('paymentLink');
+const crewList = document.getElementById('crewList');
+const crewCount = document.getElementById('crewCount');
+
+let selectedFundingOption = null;
+let selectedSessionId = null;
+let toastTimer = null;
+let myStardust = 1240;
+let W = 0;
+let H = 0;
+let stars = [];
+let mouse = { x: -999, y: -999 };
+let cursorAngle = -20;
+let resolvedConstellations = [];
+
+const CONSTELLATIONS = [
+  { stars: [[0.08,0.20],[0.11,0.27],[0.09,0.34],[0.14,0.30],[0.19,0.30],[0.17,0.22],[0.20,0.38]], lines: [[0,1],[1,2],[1,3],[3,4],[4,5],[4,6]] },
+  { stars: [[0.75,0.08],[0.80,0.14],[0.85,0.09],[0.90,0.15],[0.95,0.10]], lines: [[0,1],[1,2],[2,3],[3,4]] },
+  { stars: [[0.55,0.12],[0.60,0.10],[0.65,0.11],[0.70,0.14],[0.72,0.20],[0.68,0.24],[0.63,0.22]], lines: [[0,1],[1,2],[2,3],[3,4],[4,5],[5,6],[6,2]] },
+  { stars: [[0.82,0.55],[0.86,0.60],[0.84,0.66],[0.80,0.71],[0.76,0.75],[0.74,0.80],[0.78,0.83],[0.83,0.82]], lines: [[0,1],[1,2],[2,3],[3,4],[4,5],[5,6],[5,7]] },
+  { stars: [[0.28,0.55],[0.32,0.50],[0.37,0.48],[0.42,0.52],[0.40,0.58],[0.35,0.62],[0.30,0.61]], lines: [[0,1],[1,2],[2,3],[3,4],[4,5],[5,6],[6,0]] },
+  { stars: [[0.50,0.30],[0.47,0.36],[0.53,0.36],[0.46,0.42],[0.54,0.42]], lines: [[0,1],[0,2],[1,3],[2,4],[3,4]] },
+  { stars: [[0.16,0.68],[0.20,0.62],[0.24,0.68],[0.20,0.72],[0.18,0.78],[0.23,0.79]], lines: [[0,1],[1,2],[1,3],[3,4],[3,5]] },
+  { stars: [[0.36,0.16],[0.40,0.20],[0.44,0.24],[0.40,0.28],[0.36,0.32],[0.47,0.18],[0.33,0.25]], lines: [[0,1],[1,2],[2,3],[3,4],[1,5],[2,6]] }
+];
+
+const progressFields = Array.from(document.querySelectorAll('[data-progress-field]'));
+const formSteps = Array.from(document.querySelectorAll('.form-step'));
+
+const demoSessions = [
+  {
+    id: 1,
+    title: 'Moonrise Watch',
+    place: 'East Ridge Field',
+    time: 'Tonight, 8:30 PM',
+    seats: '12 spots',
+    cost: 35,
+    fundingGoal: 600,
+    fundingRaised: 240,
+    desc: 'A relaxed telescope meetup for lunar viewing and beginner photography.',
+    participants: [
+      { name: 'Mira', initials: 'MI', bringing: 'Dobsonian telescope' },
+      { name: 'Dev', initials: 'DV', bringing: 'Tripod and moon filter' },
+    ],
+  },
+  {
+    id: 2,
+    title: 'Meteor Shower Hangout',
+    place: 'North Lake Deck',
+    time: 'Saturday, 11:00 PM',
+    seats: '8 spots',
+    cost: 50,
+    fundingGoal: 850,
+    fundingRaised: 390,
+    desc: 'Bring a blanket. We will track the radiant and compare sightings.',
+    participants: [
+      { name: 'Isha', initials: 'IS', bringing: 'Blankets and warm tea' },
+      { name: 'Rohit', initials: 'RH', bringing: 'Red flashlights' },
+    ],
+  },
+  {
+    id: 3,
+    title: 'Deep Sky Basics',
+    place: 'Riverside Dark Spot',
+    time: 'Sunday, 7:15 PM',
+    seats: '5 spots',
+    cost: 70,
+    fundingGoal: 1200,
+    fundingRaised: 760,
+    desc: 'Small-group session for finding nebulae, clusters, and galaxies.',
+    participants: [
+      { name: 'Nora', initials: 'NO', bringing: 'Star atlas' },
+      { name: 'Cal', initials: 'CA', bringing: 'Portable power bank' },
+    ],
+  },
+];
+
+function resizeStars() {
+  W = canvas.width = window.innerWidth;
+  H = canvas.height = window.innerHeight;
+  resolvedConstellations = CONSTELLATIONS.map(item => ({
+    ...item,
+    px: item.stars.map(([rx, ry]) => ({ x: rx * W, y: ry * H }))
+  }));
+  stars = Array.from({ length: Math.floor(W * H / 3400) }, () => ({
+    x: Math.random() * W,
+    y: Math.random() * H,
+    r: Math.random() * 1.7 + 0.35,
+    a: Math.random() * 0.62 + 0.18,
+    ph: Math.random() * Math.PI * 2,
+    sp: Math.random() * 0.012 + 0.003,
+  }));
+}
+
+function drawStars() {
+  ctx.clearRect(0, 0, W, H);
+
+  resolvedConstellations.forEach((item, index) => {
+    const pulse = 0.5 + Math.sin(Date.now() * 0.0014 + index) * 0.22;
+    ctx.strokeStyle = `rgba(145, 170, 255, ${0.16 + pulse * 0.12})`;
+    ctx.lineWidth = 0.8;
+    ctx.setLineDash([2, 7]);
+    ctx.beginPath();
+    item.lines.forEach(([a, b]) => {
+      ctx.moveTo(item.px[a].x, item.px[a].y);
+      ctx.lineTo(item.px[b].x, item.px[b].y);
+    });
+    ctx.stroke();
+    ctx.setLineDash([]);
+
+    item.px.forEach(point => {
+      const glow = 2.4 + pulse * 1.2;
+      ctx.fillStyle = `rgba(174, 203, 255, ${0.22 + pulse * 0.24})`;
+      ctx.beginPath();
+      ctx.arc(point.x, point.y, glow * 3.2, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.fillStyle = `rgba(225, 235, 255, ${0.72 + pulse * 0.22})`;
+      ctx.beginPath();
+      ctx.arc(point.x, point.y, glow, 0, Math.PI * 2);
+      ctx.fill();
+    });
+  });
+
+  stars.forEach(star => {
+    star.ph += star.sp;
+    const alpha = Math.min(1, Math.max(0.08, star.a + Math.sin(star.ph) * 0.16));
+    ctx.beginPath();
+    ctx.arc(star.x, star.y, star.r, 0, Math.PI * 2);
+    ctx.fillStyle = `rgba(210,220,255,${alpha})`;
+    ctx.fill();
+  });
+
+  requestAnimationFrame(drawStars);
+}
+
+function showRoute(route, shouldUpdateHash = true) {
+  const safeRoute = routeNames.includes(route) ? route : 'landing';
+
+  routeNames.forEach(name => {
+    pages[name].classList.toggle('active', name === safeRoute);
+  });
+
+  if (shouldUpdateHash) {
+    const nextHash = safeRoute === 'landing' ? '' : `#${safeRoute}`;
+    history.pushState({ route: safeRoute }, '', `${location.pathname}${nextHash}`);
+  }
+
+  if (safeRoute === 'participant' && selectedSessionId === null) {
+    selectSession(demoSessions[0].id);
+  }
+
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+  updateHostProgress();
+}
+
+function routeFromHash() {
+  const hashRoute = location.hash.replace('#', '');
+  return routeNames.includes(hashRoute) ? hashRoute : 'landing';
+}
+
+function showToast(message) {
+  toast.textContent = message;
+  toast.classList.remove('hidden');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => toast.classList.add('hidden'), 2800);
+}
+
+function updateStardust() {
+  navStardust.textContent = myStardust.toLocaleString();
+  profileStardust.textContent = myStardust.toLocaleString();
+}
+
+function isProgressFieldComplete(field) {
+  if (field === mapPicker) return Boolean(mapPicker.dataset.lat);
+  if (field.type === 'number' && field.id === 'sessionCapacity') return field.value.trim() !== '';
+  return field.value.trim() !== '';
+}
+
+function updateHostProgress() {
+  const completed = progressFields.filter(isProgressFieldComplete).length;
+  const total = progressFields.length;
+  const progress = total ? completed / total : 0;
+  const scrollProgress = getHostScrollProgress();
+  const sceneProgress = Math.max(progress, scrollProgress);
+  const activeStep = getActiveStep();
+  const stageLabel = activeStep ? activeStep.dataset.stageLabel : 'Waiting at launch deck';
+
+  cosmosScene.style.setProperty('--scene-progress', sceneProgress.toFixed(3));
+  progressPercent.textContent = `${Math.round(progress * 100)}%`;
+  hostProgressLabel.textContent = `${completed} of ${total} checks complete`;
+  hostStageLabel.textContent = completed === total ? 'Session ready to publish.' : stageLabel;
+  document.body.dataset.hostStage = String(Math.min(8, completed));
+
+  formSteps.forEach(step => {
+    const fields = Array.from(step.querySelectorAll('[data-progress-field]'));
+    const isComplete = fields.length > 0 && fields.every(isProgressFieldComplete);
+    step.classList.toggle('is-complete', isComplete);
+  });
+}
+
+function getHostScrollProgress() {
+  const first = formSteps[0];
+  const last = formSteps[formSteps.length - 1];
+  if (!first || !last || !pages.host.classList.contains('active')) return 0;
+
+  const start = first.offsetTop;
+  const end = last.offsetTop + last.offsetHeight - window.innerHeight * 0.7;
+  const span = Math.max(1, end - start);
+  return Math.min(1, Math.max(0, (window.scrollY - start) / span));
+}
+
+function getActiveStep() {
+  const midpoint = window.innerHeight * 0.45;
+  let closest = formSteps[0];
+  let closestDistance = Infinity;
+
+  formSteps.forEach(step => {
+    const rect = step.getBoundingClientRect();
+    const distance = Math.abs(rect.top - midpoint);
+    if (distance < closestDistance) {
+      closestDistance = distance;
+      closest = step;
+    }
+  });
+
+  formSteps.forEach(step => step.classList.toggle('is-active', step === closest));
+  return closest;
+}
+
+function setMapLocation(lat, lng, label) {
+  mapPicker.classList.add('is-set');
+  mapPicker.dataset.lat = String(lat);
+  mapPicker.dataset.lng = String(lng);
+  mapPicker.dataset.label = label;
+  mapIcon.textContent = '✓';
+  mapLabel.textContent = label;
+  mapCoords.textContent = `${lat.toFixed(5)}, ${lng.toFixed(5)}`;
+
+  const locationName = document.getElementById('locationName');
+  if (!locationName.value.trim()) locationName.value = label;
+  updateHostProgress();
+}
+
+function clearFundingSelection() {
+  selectedFundingOption = null;
+  document.querySelectorAll('.funding-option').forEach(option => {
+    option.classList.remove('selected');
+  });
+  goalRow.classList.remove('visible');
+  goalAmount.value = '';
+}
+
+function collectHostPayload() {
+  const fundingEnabled = fundingToggle.checked;
+
+  return {
+    title: document.getElementById('sessionTitle').value.trim(),
+    description: document.getElementById('sessionDesc').value.trim(),
+    date: document.getElementById('sessionDate').value,
+    time: document.getElementById('sessionTime').value,
+    capacity: document.getElementById('sessionCapacity').value || null,
+    location: {
+      name: document.getElementById('locationName').value.trim(),
+      description: document.getElementById('locationDesc').value.trim(),
+      lat: mapPicker.dataset.lat ? Number(mapPicker.dataset.lat) : null,
+      lng: mapPicker.dataset.lng ? Number(mapPicker.dataset.lng) : null,
+    },
+    funding: fundingEnabled
+      ? {
+          enabled: true,
+          type: selectedFundingOption,
+          goal: goalAmount.value || null,
+        }
+      : { enabled: false },
+  };
+}
+
+function escapeHtml(value) {
+  return String(value)
+    .replaceAll('&', '&amp;')
+    .replaceAll('<', '&lt;')
+    .replaceAll('>', '&gt;')
+    .replaceAll('"', '&quot;')
+    .replaceAll("'", '&#039;');
+}
+
+function renderSessions() {
+  sessionList.innerHTML = '';
+
+  demoSessions.forEach(session => {
+    const card = document.createElement('button');
+    card.className = 'session-card';
+    card.type = 'button';
+    card.dataset.sessionId = String(session.id);
+    card.innerHTML = `
+      <h2>${escapeHtml(session.title)}</h2>
+      <div class="session-meta">
+        <span>${escapeHtml(session.place)}</span>
+        <span>${escapeHtml(session.time)}</span>
+        <span>${escapeHtml(session.seats)}</span>
+        <span>${session.participants.length} participants</span>
+      </div>
+      <p>${escapeHtml(session.desc)}</p>
+      <span class="cost-chip">${session.cost} Stardust to join</span>
+    `;
+
+    card.addEventListener('click', () => selectSession(session.id));
+    sessionList.appendChild(card);
+  });
+}
+
+function selectSession(sessionId) {
+  selectedSessionId = sessionId;
+  const session = demoSessions.find(item => item.id === sessionId);
+  if (!session) return;
+
+  document.querySelectorAll('.session-card').forEach(card => {
+    card.classList.toggle('selected', Number(card.dataset.sessionId) === sessionId);
+  });
+
+  sessionEmpty.classList.add('hidden');
+  sessionContent.classList.remove('hidden');
+  detailTitle.textContent = session.title;
+  detailDesc.textContent = session.desc;
+  detailCost.textContent = session.cost;
+  detailFacts.innerHTML = `
+    <span>${escapeHtml(session.place)}</span>
+    <span>${escapeHtml(session.time)}</span>
+    <span>${escapeHtml(session.seats)}</span>
+    <span>${session.participants.length} participants</span>
+    <span>${session.fundingRaised}/${session.fundingGoal} funding</span>
+  `;
+  contributionAmount.value = '';
+  bringingInput.value = '';
+  renderCrew(session);
+}
+
+function renderCrew(session) {
+  crewList.innerHTML = '';
+  crewCount.textContent = `${session.participants.length} listed`;
+
+  session.participants.forEach(person => {
+    const item = document.createElement('div');
+    item.className = 'crew-item';
+    item.innerHTML = `
+      <div class="crew-avatar">${escapeHtml(person.initials)}</div>
+      <div>
+        <strong>${escapeHtml(person.name)}</strong>
+        <span>${escapeHtml(person.bringing)}</span>
+      </div>
+    `;
+    crewList.appendChild(item);
+  });
+}
+
+document.querySelectorAll('[data-route]').forEach(button => {
+  button.addEventListener('click', () => {
+    showRoute(button.dataset.route);
+  });
+});
+
+window.addEventListener('popstate', () => {
+  showRoute(routeFromHash(), false);
+});
+
+window.addEventListener('scroll', updateHostProgress, { passive: true });
+
+window.addEventListener('mousemove', event => {
+  const dx = event.clientX - mouse.x;
+  const dy = event.clientY - mouse.y;
+  mouse.x = event.clientX;
+  mouse.y = event.clientY;
+
+  if (spaceCursor) {
+    if (Math.abs(dx) + Math.abs(dy) > 0.4) {
+      cursorAngle = Math.atan2(dy, dx) * 180 / Math.PI + 90;
+    }
+
+    spaceCursor.style.opacity = '1';
+    spaceCursor.style.transform = `translate(${mouse.x - 23}px, ${mouse.y - 23}px) rotate(${cursorAngle}deg)`;
+  }
+});
+
+window.addEventListener('mouseleave', () => {
+  mouse.x = -999;
+  mouse.y = -999;
+  if (spaceCursor) spaceCursor.style.opacity = '0';
+});
+
+progressFields.forEach(field => {
+  field.addEventListener('input', updateHostProgress);
+  field.addEventListener('change', updateHostProgress);
+});
+
+mapPicker.addEventListener('click', () => {
+  setMapLocation(14.5832, 121.0000, 'Rizal Park, Manila');
+  showToast('Demo location set');
+});
+
+fundingToggle.addEventListener('change', () => {
+  fundingOptions.classList.toggle('visible', fundingToggle.checked);
+  if (!fundingToggle.checked) clearFundingSelection();
+  updateHostProgress();
+});
+
+document.querySelectorAll('.funding-option').forEach(option => {
+  option.addEventListener('click', () => {
+    selectedFundingOption = option.dataset.funding;
+    document.querySelectorAll('.funding-option').forEach(item => {
+      item.classList.toggle('selected', item === option);
+    });
+    goalRow.classList.add('visible');
+  });
+});
+
+hostForm.addEventListener('submit', event => {
+  event.preventDefault();
+
+  if (fundingToggle.checked && !selectedFundingOption) {
+    showToast('Choose a funding pool type first');
+    return;
+  }
+
+  const payload = collectHostPayload();
+  const nextId = demoSessions.length + 1;
+
+  demoSessions.unshift({
+    id: nextId,
+    title: payload.title || 'Untitled skywatch',
+    place: payload.location.name || 'Location pending',
+    time: payload.date && payload.time ? `${payload.date}, ${payload.time}` : 'Time pending',
+    seats: payload.capacity ? `${payload.capacity} spots` : 'Open spots',
+    cost: 25,
+    fundingGoal: Number(payload.funding.goal) || 500,
+    fundingRaised: 0,
+    desc: payload.description || 'New Orbit community session.',
+    participants: [
+      { name: 'Cosmic Guest', initials: 'CG', bringing: 'Host kit' },
+    ],
+  });
+
+  renderSessions();
+  showToast('Session initiated and added to available sessions');
+  showRoute('participant');
+  selectSession(nextId);
+});
+
+joinForm.addEventListener('submit', event => {
+  event.preventDefault();
+
+  const session = demoSessions.find(item => item.id === selectedSessionId);
+  if (!session) return;
+
+  if (myStardust < session.cost) {
+    showToast(`You need ${session.cost} Stardust to join this session`);
+    return;
+  }
+
+  const bringing = bringingInput.value.trim();
+  if (!bringing) {
+    showToast('Add your gear or supplies');
+    return;
+  }
+
+  const contribution = Math.max(0, Math.floor(Number(contributionAmount.value) || 0));
+  myStardust -= session.cost;
+  session.fundingRaised += contribution;
+  session.participants.push({
+    name: 'Cosmic Guest',
+    initials: 'CG',
+    bringing: `${bringing}${contribution ? `, ${contribution} via ${paymentLink.value}` : ''}`,
+  });
+
+  updateStardust();
+  renderSessions();
+  selectSession(session.id);
+  showToast(`Joined "${session.title}" for ${session.cost} Stardust`);
+});
+
+function closeProfileMenu() {
+  profileMenu.classList.add('hidden');
+  profileBtn.setAttribute('aria-expanded', 'false');
+}
+
+function toggleProfileMenu() {
+  const isOpen = !profileMenu.classList.contains('hidden');
+  if (isOpen) {
+    closeProfileMenu();
+    return;
+  }
+
+  updateStardust();
+  profileMenu.classList.remove('hidden');
+  profileBtn.setAttribute('aria-expanded', 'true');
+}
+
+profileBtn.addEventListener('click', event => {
+  event.stopPropagation();
+  toggleProfileMenu();
+});
+
+profileMenu.addEventListener('click', event => {
+  event.stopPropagation();
+});
+
+document.addEventListener('click', closeProfileMenu);
+
+document.addEventListener('keydown', event => {
+  if (event.key === 'Escape') closeProfileMenu();
+});
+
+renderSessions();
+showRoute(routeFromHash(), false);
+updateStardust();
+window.addEventListener('resize', () => {
+  resizeStars();
+  updateHostProgress();
+});
+resizeStars();
+drawStars();

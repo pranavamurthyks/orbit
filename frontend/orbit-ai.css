@@ -1,0 +1,204 @@
+.orbit-ai-toggle {
+  position: fixed;
+  right: 22px;
+  bottom: 22px;
+  z-index: 900;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 46px;
+  padding: 0 16px;
+  border: 1px solid rgba(110, 231, 216, 0.34);
+  border-radius: 999px;
+  background: rgba(6, 9, 30, 0.9);
+  color: #dde4ff;
+  font: 600 13px/1.1 "Inter", "Segoe UI", system-ui, sans-serif;
+  box-shadow: 0 18px 54px rgba(0, 0, 0, 0.34), 0 0 30px rgba(110, 231, 216, 0.1);
+  backdrop-filter: blur(16px);
+  cursor: pointer !important;
+}
+
+.orbit-ai-toggle span:first-child {
+  color: #6ee7d8;
+  font-size: 18px;
+}
+
+.orbit-ai-panel {
+  position: fixed;
+  right: 22px;
+  bottom: 82px;
+  z-index: 901;
+  width: min(390px, calc(100vw - 28px));
+  max-height: min(680px, calc(100vh - 110px));
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  border: 1px solid rgba(150, 170, 255, 0.24);
+  border-radius: 14px;
+  background: rgba(5, 8, 28, 0.96);
+  color: #dde4ff;
+  box-shadow: 0 28px 90px rgba(0, 0, 0, 0.48);
+  backdrop-filter: blur(20px) saturate(130%);
+  font-family: "Inter", "Segoe UI", system-ui, sans-serif;
+}
+
+.orbit-ai-panel.hidden {
+  display: none;
+}
+
+.orbit-ai-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 14px 15px;
+  border-bottom: 1px solid rgba(150, 170, 255, 0.16);
+}
+
+.orbit-ai-title {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.orbit-ai-title strong {
+  font-size: 14px;
+}
+
+.orbit-ai-title span {
+  color: rgba(180, 190, 230, 0.58);
+  font-size: 11px;
+}
+
+.orbit-ai-close {
+  width: 30px;
+  height: 30px;
+  border: 0;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.04);
+  color: rgba(221, 228, 255, 0.8);
+  font-size: 16px;
+  cursor: pointer !important;
+}
+
+.orbit-ai-body {
+  padding: 14px;
+  overflow: auto;
+}
+
+.orbit-ai-chiprow {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.orbit-ai-chip,
+.orbit-ai-action {
+  border: 1px solid rgba(150, 170, 255, 0.18);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.045);
+  color: rgba(221, 228, 255, 0.84);
+  cursor: pointer !important;
+  font: 600 12px/1.2 "Inter", "Segoe UI", system-ui, sans-serif;
+  padding: 8px 10px;
+  text-align: left;
+}
+
+.orbit-ai-chip:hover,
+.orbit-ai-action:hover {
+  border-color: rgba(110, 231, 216, 0.42);
+  background: rgba(110, 231, 216, 0.08);
+  color: #ecfffc;
+}
+
+.orbit-ai-output {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.orbit-ai-card {
+  border: 1px solid rgba(150, 170, 255, 0.16);
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.04);
+  padding: 12px;
+}
+
+.orbit-ai-card h3 {
+  margin: 0 0 7px;
+  color: #6ee7d8;
+  font-size: 12px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.orbit-ai-card p,
+.orbit-ai-card li {
+  color: rgba(221, 228, 255, 0.78);
+  font-size: 13px;
+  line-height: 1.55;
+}
+
+.orbit-ai-card ul {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin: 8px 0 0;
+  padding-left: 18px;
+}
+
+.orbit-ai-actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  margin-top: 10px;
+}
+
+.orbit-ai-pagebar {
+  position: relative;
+  z-index: 3;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+  gap: 10px;
+  width: min(100%, 1040px);
+  margin: 16px auto 0;
+}
+
+.orbit-ai-mini {
+  border: 1px solid rgba(110, 231, 216, 0.18);
+  border-radius: 10px;
+  background: rgba(6, 9, 30, 0.68);
+  color: rgba(221, 228, 255, 0.82);
+  padding: 11px 12px;
+  backdrop-filter: blur(14px);
+}
+
+.orbit-ai-mini strong {
+  display: block;
+  color: #6ee7d8;
+  font-size: 12px;
+  margin-bottom: 3px;
+}
+
+.orbit-ai-mini span {
+  display: block;
+  font-size: 12px;
+  line-height: 1.45;
+}
+
+@media (max-width: 560px) {
+  .orbit-ai-toggle {
+    right: 14px;
+    bottom: 14px;
+  }
+
+  .orbit-ai-panel {
+    right: 14px;
+    bottom: 70px;
+  }
+
+  .orbit-ai-actions {
+    grid-template-columns: 1fr;
+  }
+}

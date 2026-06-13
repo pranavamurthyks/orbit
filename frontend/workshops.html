@@ -1,0 +1,1019 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Space Dashboard — Live Feed</title>
+  <link rel="stylesheet" href="login.css" />
+  <link rel="stylesheet" href="orbit-ai.css" />
+  <style>
+    :root {
+      --bg:        #020510;
+      --bg-panel:  rgba(8, 11, 31, 0.46);
+      --bg-card:   rgba(3, 5, 16, 0.28);
+      --border:    rgba(150, 170, 255, 0.23);
+      --accent:    #aec0ff;
+      --accent2:   #f0a060;
+      --gold:      #f0a060;
+      --gold-dim:  rgba(240, 160, 96, 0.18);
+      --border-hi: rgba(150, 170, 255, 0.32);
+      --text:      #dde4ff;
+      --text-dim:  rgba(180, 190, 230, 0.58);
+      --tag-isro:  #FF6B35;
+      --tag-drdo:  #5EE6D9;
+      --tag-nasa:  #4A9EFF;
+      --tag-esa:   #A78BFA;
+      --tag-other: #6EE7B7;
+      --mono: "Segoe UI", system-ui, sans-serif;
+      --sans: "Segoe UI", system-ui, sans-serif;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      display: block;
+      align-items: stretch;
+      justify-content: flex-start;
+      padding: 0;
+      background:
+        radial-gradient(circle at 18% 24%, rgba(80, 110, 255, 0.14), transparent 30%),
+        radial-gradient(circle at 82% 18%, rgba(110, 231, 216, 0.09), transparent 28%),
+        radial-gradient(circle at 50% 58%, rgba(35, 48, 120, 0.12), transparent 38%),
+        var(--bg);
+      color: var(--text);
+      font-family: var(--sans);
+      min-height: 100vh;
+      overflow-x: hidden;
+      overflow-y: auto;
+    }
+
+    body::before {
+      z-index: 0;
+    }
+
+    button,
+    a {
+      cursor: none;
+    }
+
+    .navbar {
+      position: sticky;
+      top: 0;
+      z-index: 20;
+      display: flex;
+      align-items: center;
+      gap: 32px;
+      min-height: 60px;
+      padding: 0 32px;
+      background: rgba(2, 5, 16, 0.72);
+      border-bottom: 1px solid rgba(150, 170, 255, 0.18);
+      backdrop-filter: blur(14px);
+    }
+
+    .nav-logo {
+      color: #d9e2ff;
+      font-size: 18px;
+      font-weight: 600;
+      letter-spacing: 0.01em;
+      text-decoration: none;
+      white-space: nowrap;
+    }
+
+    .nav-links {
+      display: flex;
+      gap: 6px;
+      flex: 1;
+    }
+
+    .nav-links a {
+      border-radius: 8px;
+      color: rgba(180, 190, 230, 0.58);
+      font-size: 13px;
+      padding: 6px 14px;
+      text-decoration: none;
+      transition: background 0.2s, color 0.2s;
+    }
+
+    .nav-links a:hover {
+      background: rgba(255, 255, 255, 0.04);
+      color: #dde4ff;
+    }
+
+    .nav-links a.active {
+      background: rgba(115, 135, 235, 0.24);
+      color: #dde4ff;
+    }
+
+    .nav-user {
+      position: relative;
+      display: flex;
+      align-items: center;
+      gap: 14px;
+    }
+
+    .stardust-pill {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      background: var(--gold-dim);
+      border: 1px solid rgba(240,160,96,0.28);
+      border-radius: 999px;
+      padding: 5px 12px;
+      font-size: 13px;
+      color: var(--gold);
+      font-weight: 500;
+      white-space: nowrap;
+    }
+
+    .star-icon {
+      color: var(--gold);
+      font-size: 11px;
+    }
+
+    .avatar {
+      width: 34px;
+      height: 34px;
+      border-radius: 50%;
+      background: rgba(100,130,255,0.2);
+      border: 1px solid var(--border-hi);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--accent);
+      font-family: inherit;
+      font-size: 12px;
+      font-weight: 600;
+      transition: background 0.2s, border-color 0.2s, transform 0.15s;
+    }
+
+    .avatar:hover,
+    .avatar[aria-expanded="true"] {
+      background: rgba(100,130,255,0.32);
+      border-color: rgba(150,180,255,0.58);
+    }
+
+    .avatar:active {
+      transform: scale(0.96);
+    }
+
+    .profile-menu {
+      position: absolute;
+      top: calc(100% + 12px);
+      right: 0;
+      z-index: 80;
+      width: min(292px, calc(100vw - 32px));
+      background: rgba(6,9,30,0.96);
+      border: 1px solid var(--border-hi);
+      border-radius: 14px;
+      padding: 14px;
+      backdrop-filter: blur(18px);
+      box-shadow: 0 24px 70px rgba(0,0,0,0.48);
+    }
+
+    .profile-menu.hidden {
+      display: none;
+    }
+
+    .profile-menu::before {
+      content: "";
+      position: absolute;
+      top: -7px;
+      right: 13px;
+      width: 12px;
+      height: 12px;
+      background: rgba(6,9,30,0.96);
+      border-left: 1px solid var(--border-hi);
+      border-top: 1px solid var(--border-hi);
+      transform: rotate(45deg);
+    }
+
+    .profile-head {
+      display: flex;
+      align-items: center;
+      gap: 11px;
+      padding-bottom: 13px;
+      border-bottom: 1px solid rgba(150, 170, 255, 0.16);
+    }
+
+    .profile-avatar {
+      width: 42px;
+      height: 42px;
+      border-radius: 50%;
+      background: rgba(100,130,255,0.24);
+      border: 1px solid var(--border-hi);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--accent);
+      font-size: 13px;
+      font-weight: 700;
+      flex-shrink: 0;
+    }
+
+    .profile-name {
+      color: var(--text);
+      font-size: 14px;
+      font-weight: 600;
+    }
+
+    .profile-role {
+      color: var(--text-dim);
+      font-size: 12px;
+      margin-top: 2px;
+    }
+
+    .profile-balance {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      margin-top: 12px;
+      padding: 10px 12px;
+      background: var(--gold-dim);
+      border: 1px solid rgba(240,160,96,0.25);
+      border-radius: 10px;
+    }
+
+    .profile-balance span {
+      color: rgba(240,160,96,0.74);
+      font-size: 12px;
+    }
+
+    .profile-balance strong {
+      color: var(--gold);
+      font-size: 14px;
+      white-space: nowrap;
+    }
+
+    .profile-stats {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 8px;
+      margin-top: 10px;
+    }
+
+    .profile-stats div {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 2px;
+      padding: 9px 6px;
+      background: rgba(255,255,255,0.035);
+      border: 1px solid rgba(150, 170, 255, 0.16);
+      border-radius: 10px;
+    }
+
+    .profile-stats strong {
+      color: var(--accent);
+      font-size: 15px;
+    }
+
+    .profile-stats span {
+      color: var(--text-dim);
+      font-size: 10px;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    .profile-actions {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      margin-top: 12px;
+    }
+
+    .profile-actions button,
+    .profile-signout {
+      width: 100%;
+      background: rgba(255,255,255,0.035);
+      border: 1px solid transparent;
+      border-radius: 9px;
+      color: var(--text-dim);
+      font: inherit;
+      font-size: 13px;
+      text-align: left;
+      padding: 9px 10px;
+      transition: background 0.2s, border-color 0.2s, color 0.2s;
+    }
+
+    .profile-actions button:hover {
+      background: rgba(100,130,255,0.12);
+      border-color: rgba(150, 170, 255, 0.16);
+      color: var(--text);
+    }
+
+    .profile-signout {
+      margin-top: 8px;
+      color: rgba(240,160,96,0.8);
+      text-align: center;
+      border-color: rgba(240,160,96,0.16);
+    }
+
+    .profile-signout:hover {
+      background: var(--gold-dim);
+      border-color: rgba(240,160,96,0.34);
+      color: var(--gold);
+    }
+
+    .dashboard-shell {
+      position: relative;
+      z-index: 10;
+      width: min(1180px, calc(100% - 48px));
+      margin: 32px auto 42px;
+      animation: cardIn 1s ease 0.16s both;
+      background:
+        linear-gradient(180deg, rgba(8, 11, 31, 0.46), rgba(5, 8, 25, 0.28)),
+        rgba(3, 5, 16, 0.18);
+      border: 1px solid rgba(150, 170, 255, 0.23);
+      border-radius: 20px;
+      overflow: hidden;
+      backdrop-filter: blur(12px) saturate(130%);
+      -webkit-backdrop-filter: blur(12px) saturate(130%);
+      box-shadow:
+        0 24px 90px rgba(0, 0, 0, 0.28),
+        0 0 80px rgba(80, 105, 255, 0.06),
+        inset 0 1px 0 rgba(255,255,255,0.08);
+    }
+
+    .dashboard-shell > .orbit-ai-pagebar {
+      width: auto;
+      margin: 16px 36px 0;
+    }
+
+    /* ── header ── */
+    .header {
+      padding: 32px 36px 24px;
+      border-bottom: 1px solid rgba(150, 170, 255, 0.16);
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 1rem;
+      flex-wrap: wrap;
+    }
+    .header-left h1 {
+      font-size: clamp(1.4rem, 4vw, 2rem);
+      font-weight: 600;
+      letter-spacing: 0.01em;
+      color: #d9e2ff;
+    }
+    .header-left p {
+      margin-top: 4px;
+      font-family: var(--mono);
+      font-size: 0.72rem;
+      color: var(--text-dim);
+      letter-spacing: 0.08em;
+    }
+    .live-pill {
+      display: flex;
+      align-items: center;
+      gap: 7px;
+      font-family: var(--mono);
+      font-size: 0.72rem;
+      letter-spacing: 0.12em;
+      color: var(--accent);
+      background: rgba(255, 255, 255, 0.035);
+      border: 1px solid rgba(150, 170, 255, 0.16);
+      border-radius: 999px;
+      padding: 6px 14px;
+      white-space: nowrap;
+    }
+    .live-dot {
+      width: 7px; height: 7px;
+      border-radius: 50%;
+      background: var(--accent);
+      box-shadow: 0 0 12px rgba(174, 192, 255, 0.72);
+      animation: pulse 1.6s ease-in-out infinite;
+    }
+    @keyframes pulse {
+      0%,100% { opacity: 1; transform: scale(1); }
+      50%      { opacity: 0.4; transform: scale(0.85); }
+    }
+
+    /* ── filters ── */
+    .filters {
+      padding: 16px 36px;
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      border-bottom: 1px solid rgba(150, 170, 255, 0.16);
+    }
+    .filter-btn {
+      font-family: var(--mono);
+      font-size: 0.7rem;
+      letter-spacing: 0.1em;
+      padding: 5px 14px;
+      border-radius: 8px;
+      border: 1px solid rgba(150, 170, 255, 0.16);
+      background: rgba(255, 255, 255, 0.035);
+      color: var(--text-dim);
+      transition: all 0.15s;
+    }
+    .filter-btn:hover { border-color: rgba(150, 180, 255, 0.42); color: #dde4ff; }
+    .filter-btn.active { background: rgba(115, 135, 235, 0.24); border-color: rgba(135, 164, 255, 0.42); color: #dde4ff; }
+
+    /* ── main grid ── */
+    .content { padding: 24px 36px 38px; }
+
+    .status-bar {
+      font-family: var(--mono);
+      font-size: 0.72rem;
+      color: var(--text-dim);
+      margin-bottom: 1.25rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 6px;
+    }
+    .status-bar span { color: var(--accent); }
+
+    .cards-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+      gap: 1rem;
+    }
+
+    /* ── skeleton loader ── */
+    .skeleton-card {
+      background: rgba(255, 255, 255, 0.04);
+      border: 1px solid rgba(150, 170, 255, 0.16);
+      border-radius: 12px;
+      padding: 1.25rem;
+      animation: shimmer 1.5s ease-in-out infinite;
+    }
+    .skel-line {
+      border-radius: 4px;
+      background: rgba(255,255,255,0.06);
+      margin-bottom: 10px;
+    }
+    @keyframes shimmer {
+      0%,100% { opacity: 1; }
+      50%      { opacity: 0.5; }
+    }
+
+    /* ── workshop card ── */
+    .workshop-card {
+      background:
+        linear-gradient(180deg, rgba(8, 11, 31, 0.48), rgba(5, 8, 25, 0.30)),
+        rgba(255, 255, 255, 0.035);
+      border: 1px solid rgba(150, 170, 255, 0.16);
+      border-radius: 12px;
+      padding: 1.25rem;
+      display: flex;
+      flex-direction: column;
+      gap: 0.75rem;
+      backdrop-filter: blur(12px);
+      box-shadow: inset 0 1px 0 rgba(255,255,255,0.06);
+      transition: border-color 0.18s, transform 0.18s, background 0.18s;
+      position: relative;
+      overflow: hidden;
+    }
+    .workshop-card::before {
+      content: '';
+      position: absolute;
+      top: 0; left: 0; right: 0;
+      height: 2px;
+      background: var(--card-accent, var(--accent));
+      opacity: 0.7;
+    }
+    .workshop-card:hover {
+      border-color: rgba(150, 180, 255, 0.42);
+      background: rgba(255, 255, 255, 0.055);
+      transform: translateY(-2px);
+    }
+
+    .card-top {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 8px;
+    }
+    .org-tag {
+      font-family: var(--mono);
+      font-size: 0.65rem;
+      font-weight: 600;
+      letter-spacing: 0.12em;
+      padding: 3px 10px;
+      border-radius: 999px;
+      white-space: nowrap;
+    }
+    .org-isro  { background: rgba(255,107,53,0.15); color: var(--tag-isro); border: 1px solid rgba(255,107,53,0.3); }
+    .org-drdo  { background: rgba(94,230,217,0.1);  color: var(--tag-drdo); border: 1px solid rgba(94,230,217,0.25); }
+    .org-nasa  { background: rgba(74,158,255,0.1);  color: var(--tag-nasa); border: 1px solid rgba(74,158,255,0.25); }
+    .org-esa   { background: rgba(167,139,250,0.1); color: var(--tag-esa);  border: 1px solid rgba(167,139,250,0.25); }
+    .org-other { background: rgba(110,231,183,0.1); color: var(--tag-other);border: 1px solid rgba(110,231,183,0.25); }
+
+    .date-badge {
+      font-family: var(--mono);
+      font-size: 0.65rem;
+      color: var(--text-dim);
+      white-space: nowrap;
+    }
+
+    .card-title {
+      font-size: 0.95rem;
+      font-weight: 600;
+      line-height: 1.4;
+      color: var(--text);
+    }
+
+    .card-meta {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+    }
+    .meta-chip {
+      font-family: var(--mono);
+      font-size: 0.65rem;
+      padding: 3px 9px;
+      border-radius: 4px;
+      background: rgba(255,255,255,0.04);
+      border: 1px solid rgba(150, 170, 255, 0.13);
+      color: var(--text-dim);
+    }
+
+    .card-desc {
+      font-size: 0.82rem;
+      line-height: 1.6;
+      color: var(--text-dim);
+    }
+
+    .card-footer {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      margin-top: auto;
+      padding-top: 0.5rem;
+      border-top: 1px solid rgba(150, 170, 255, 0.16);
+    }
+    .deadline {
+      font-family: var(--mono);
+      font-size: 0.65rem;
+      color: var(--accent2);
+    }
+    .deadline.urgent { color: #FF4444; animation: pulse 1s ease-in-out infinite; }
+
+    .source-link {
+      font-family: var(--mono);
+      font-size: 0.65rem;
+      color: var(--text-dim);
+      text-decoration: none;
+      border: 1px solid rgba(150, 170, 255, 0.16);
+      border-radius: 8px;
+      padding: 4px 10px;
+      transition: all 0.15s;
+    }
+    .source-link:hover { color: #dde4ff; border-color: rgba(150, 180, 255, 0.42); }
+
+    /* ── error / empty state ── */
+    .error-state, .empty-state {
+      grid-column: 1/-1;
+      text-align: center;
+      padding: 4rem 2rem;
+    }
+    .error-state .icon, .empty-state .icon { font-size: 3rem; margin-bottom: 1rem; }
+    .error-state h3, .empty-state h3 { font-size: 1.1rem; margin-bottom: 0.5rem; }
+    .error-state p, .empty-state p { font-size: 0.85rem; color: var(--text-dim); }
+    .retry-btn {
+      margin-top: 1.5rem;
+      font-family: var(--mono);
+      font-size: 0.75rem;
+      letter-spacing: 0.1em;
+      padding: 10px 24px;
+      background: transparent;
+      border: 1px solid rgba(135, 164, 255, 0.42);
+      color: #d9e2ff;
+      border-radius: 11px;
+      transition: background 0.15s;
+    }
+    .retry-btn:hover { background: rgba(90, 120, 255, 0.20); }
+
+    /* ── last updated footer ── */
+    .page-footer {
+      padding: 16px 36px;
+      border-top: 1px solid rgba(150, 170, 255, 0.16);
+      font-family: var(--mono);
+      font-size: 0.68rem;
+      color: var(--text-dim);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+    .refresh-btn {
+      background: transparent;
+      border: 1px solid rgba(150, 170, 255, 0.16);
+      color: var(--text-dim);
+      font-family: var(--mono);
+      font-size: 0.68rem;
+      padding: 5px 14px;
+      border-radius: 8px;
+      transition: all 0.15s;
+    }
+    .refresh-btn:hover { border-color: rgba(150, 180, 255, 0.42); color: #dde4ff; }
+    .refresh-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+
+    .constellation-tooltip {
+      z-index: 30;
+      display: none !important;
+    }
+
+    @media (max-width: 600px) {
+      .navbar {
+        padding: 0 16px;
+      }
+
+      .nav-links {
+        display: none;
+      }
+
+      .stardust-pill {
+        display: none;
+      }
+
+      .profile-menu {
+        right: -4px;
+      }
+
+      .profile-menu::before {
+        right: 17px;
+      }
+
+      .dashboard-shell {
+        width: min(100% - 28px, 1180px);
+        margin-top: 20px;
+      }
+
+      .dashboard-shell > .orbit-ai-pagebar {
+        margin-left: 1rem;
+        margin-right: 1rem;
+      }
+
+      .header, .filters, .content, .page-footer { padding-left: 1rem; padding-right: 1rem; }
+      .cards-grid { grid-template-columns: 1fr; }
+    }
+
+    @media (pointer: coarse) {
+      button,
+      a {
+        cursor: auto;
+      }
+    }
+  </style>
+</head>
+<body>
+
+<canvas id="starCanvas"></canvas>
+<div class="space-cursor" id="spaceCursor" aria-hidden="true">
+  <span class="rocket-flame"></span>
+  <span class="rocket-body"></span>
+</div>
+
+<nav class="navbar">
+  <a class="nav-logo" href="index.html">✦ Orbit</a>
+  <div class="nav-links">
+    <a href="loading.html">Launch</a>
+    <a href="workshops.html" class="active">Dashboard</a>
+    <a href="photography.html">Photography</a>
+    <a href="iss.html">ISS Tracker</a>
+    <a href="vr.html">VR</a>
+    <a href="long-horizon-exchange.html">Time Dilation</a>
+    <a href="community.html">Community</a>
+  </div>
+  <div class="nav-user">
+    <span class="stardust-pill">
+      <span class="star-icon">✦</span>
+      <span id="myStardust">1,240</span> pts
+    </span>
+    <button class="avatar" id="profileBtn" type="button" aria-label="Open profile menu" aria-expanded="false">CG</button>
+    <div class="profile-menu hidden" id="profileMenu">
+      <div class="profile-head">
+        <div class="profile-avatar">CG</div>
+        <div>
+          <div class="profile-name">Cosmic Guest</div>
+          <div class="profile-role">Explorer Level 3</div>
+        </div>
+      </div>
+      <div class="profile-balance">
+        <span>Stardust Balance</span>
+        <strong><span id="profileStardust">1,240</span> pts</strong>
+      </div>
+      <div class="profile-stats">
+        <div><strong>6</strong><span>Found</span></div>
+        <div><strong>3</strong><span>Saved</span></div>
+        <div><strong>1</strong><span>Applied</span></div>
+      </div>
+      <div class="profile-actions">
+        <button type="button" data-profile-action="workshops">My Dashboard</button>
+        <button type="button" data-profile-action="saved">Saved Events</button>
+        <button type="button" data-profile-action="settings">Profile Settings</button>
+      </div>
+      <button class="profile-signout" type="button" data-profile-action="signout">Sign out</button>
+    </div>
+  </div>
+</nav>
+
+<main class="dashboard-shell">
+
+<header class="header">
+  <div class="header-left">
+    <h1>Space Dashboard</h1>
+    <p>LIVE FEED — ISRO · DRDO · NASA · ESA · IN-SPAACE &amp; MORE</p>
+  </div>
+  <div class="live-pill">
+    <span class="live-dot"></span>
+    LIVE
+  </div>
+</header>
+
+<div class="filters">
+  <button class="filter-btn active" data-org="ALL">ALL</button>
+  <button class="filter-btn" data-org="ISRO">ISRO</button>
+  <button class="filter-btn" data-org="DRDO">DRDO</button>
+  <button class="filter-btn" data-org="NASA">NASA</button>
+  <button class="filter-btn" data-org="ESA">ESA</button>
+  <button class="filter-btn" data-org="OTHER">OTHERS</button>
+</div>
+
+<div class="content">
+  <div class="status-bar">
+    <div id="status-text">Fetching live data...</div>
+    <div id="result-count"></div>
+  </div>
+  <div class="cards-grid" id="cards-grid">
+    <div class="skeleton-card">
+      <div class="skel-line" style="height:16px;width:40%"></div>
+      <div class="skel-line" style="height:20px;width:85%"></div>
+      <div class="skel-line" style="height:14px;width:60%"></div>
+      <div class="skel-line" style="height:60px;width:100%"></div>
+    </div>
+    <div class="skeleton-card">
+      <div class="skel-line" style="height:16px;width:40%"></div>
+      <div class="skel-line" style="height:20px;width:85%"></div>
+      <div class="skel-line" style="height:14px;width:60%"></div>
+      <div class="skel-line" style="height:60px;width:100%"></div>
+    </div>
+    <div class="skeleton-card">
+      <div class="skel-line" style="height:16px;width:40%"></div>
+      <div class="skel-line" style="height:20px;width:85%"></div>
+      <div class="skel-line" style="height:14px;width:60%"></div>
+      <div class="skel-line" style="height:60px;width:100%"></div>
+    </div>
+  </div>
+</div>
+
+<footer class="page-footer">
+  <span>Data sourced via AI-powered live web search · Results may vary with availability</span>
+  <div style="display:flex;gap:8px;align-items:center">
+    <span id="last-updated"></span>
+    <button class="refresh-btn" id="refresh-btn" onclick="fetchWorkshops()">↻ Refresh</button>
+  </div>
+</footer>
+
+</main>
+
+<div class="constellation-tooltip hidden" id="tooltip"></div>
+
+<script src="login.js"></script>
+<script>
+  let allWorkshops = [];
+  let activeFilter = 'ALL';
+
+  // ── call Claude API with web search tool ──────────────────────
+  async function fetchWorkshops() {
+    const btn = document.getElementById('refresh-btn');
+    btn.disabled = true;
+    btn.textContent = '↻ Fetching...';
+    setStatus('Searching the web for live workshop listings...');
+    showSkeletons();
+
+    const today = new Date().toLocaleDateString('en-IN', {
+      day: 'numeric', month: 'long', year: 'numeric'
+    });
+
+    const prompt = `Today is ${today}.
+
+Search the web right now for upcoming space-related workshops, training programmes, internships, competitions, and events organised by or affiliated with:
+- ISRO (Indian Space Research Organisation) and any of its centres (VSSC, SAC, URSC, NRSC, etc.)
+- DRDO (Defence Research and Development Organisation)
+- IN-SPACe (Indian National Space Promotion and Authorisation Centre)
+- NASA (any open programmes or workshops available to Indian participants)
+- ESA (European Space Agency — open programmes)
+- Any other reputed space/aerospace organisations running programmes right now
+
+Search for: "ISRO workshop 2025", "ISRO internship 2025", "DRDO space workshop 2025", "IN-SPACe programme 2025", "space workshop India 2025", "NASA open programme 2025"
+
+For each event you find, return ONLY a JSON array. No markdown, no explanation, just raw JSON.
+
+Format exactly like this:
+[
+  {
+    "title": "Full name of the workshop/event",
+    "org": "ISRO" or "DRDO" or "NASA" or "ESA" or "OTHER",
+    "orgFull": "Full organisation name",
+    "date": "Event date or date range as a string",
+    "deadline": "Application deadline if mentioned, else null",
+    "location": "City/Online/Hybrid",
+    "mode": "Online" or "Offline" or "Hybrid",
+    "eligibility": "Who can apply",
+    "description": "2-3 sentence description of what the event covers",
+    "url": "Direct URL to the official event page if found, else null",
+    "source": "Where you found this info"
+  }
+]
+
+Include at least 6-10 results. If a programme is ongoing/always open (like ISRO's RESPOND), include it. If you cannot find a specific event for an org, don't fabricate one — skip it.`;
+
+    try {
+      const res = await fetch('https://api.anthropic.com/v1/messages', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          model: 'claude-sonnet-4-6',
+          max_tokens: 4000,
+          tools: [{ type: 'web_search_20250305', name: 'web_search' }],
+          messages: [{ role: 'user', content: prompt }]
+        })
+      });
+
+      if (!res.ok) throw new Error(`API error: ${res.status}`);
+      const data = await res.json();
+
+      // extract text blocks — Claude may search first then respond
+      const textBlocks = data.content.filter(b => b.type === 'text').map(b => b.text);
+      const fullText = textBlocks.join('\n');
+
+      // extract JSON array from response
+      const jsonMatch = fullText.match(/\[[\s\S]*\]/);
+      if (!jsonMatch) throw new Error('No JSON array found in response');
+
+      allWorkshops = JSON.parse(jsonMatch[0]);
+      if (!Array.isArray(allWorkshops) || allWorkshops.length === 0) throw new Error('Empty results');
+
+      renderCards(allWorkshops);
+      document.getElementById('last-updated').textContent =
+        'Last updated: ' + new Date().toLocaleTimeString('en-IN');
+      setStatus(`Found ${allWorkshops.length} events`);
+      document.getElementById('result-count').textContent =
+        `Showing ${allWorkshops.length} results`;
+
+    } catch (err) {
+      console.error(err);
+      showError(err.message);
+      setStatus('Failed to fetch data');
+    } finally {
+      btn.disabled = false;
+      btn.textContent = '↻ Refresh';
+    }
+  }
+
+  // ── render ─────────────────────────────────────────────────────
+  function renderCards(workshops) {
+    const filtered = activeFilter === 'ALL'
+      ? workshops
+      : workshops.filter(w => w.org === activeFilter ||
+          (activeFilter === 'OTHER' && !['ISRO','DRDO','NASA','ESA'].includes(w.org)));
+
+    const grid = document.getElementById('cards-grid');
+
+    if (filtered.length === 0) {
+      grid.innerHTML = `<div class="empty-state">
+        <div class="icon">🔭</div>
+        <h3>No events found for ${activeFilter}</h3>
+        <p>Try a different filter or refresh to search again.</p>
+      </div>`;
+      document.getElementById('result-count').textContent = '0 results';
+      return;
+    }
+
+    document.getElementById('result-count').textContent =
+      `Showing ${filtered.length} of ${workshops.length} results`;
+
+    const accentMap = {
+      ISRO: '#FF6B35', DRDO: '#5EE6D9', NASA: '#4A9EFF',
+      ESA: '#A78BFA', OTHER: '#6EE7B7'
+    };
+
+    grid.innerHTML = filtered.map(w => {
+      const org = w.org || 'OTHER';
+      const accent = accentMap[org] || accentMap.OTHER;
+      const orgClass = `org-${org.toLowerCase()}`;
+
+      const deadlineText = w.deadline
+        ? `DEADLINE: ${w.deadline}`
+        : 'No deadline listed';
+
+      const isUrgent = w.deadline && isDeadlineSoon(w.deadline);
+
+      return `
+        <article class="workshop-card" style="--card-accent: ${accent}">
+          <div class="card-top">
+            <span class="org-tag ${orgClass}">${org}</span>
+            <span class="date-badge">${w.date || 'Date TBD'}</span>
+          </div>
+          <h2 class="card-title">${escHtml(w.title)}</h2>
+          <div class="card-meta">
+            <span class="meta-chip">📍 ${escHtml(w.location || 'TBD')}</span>
+            <span class="meta-chip">${w.mode === 'Online' ? '💻' : w.mode === 'Hybrid' ? '🔀' : '🏛️'} ${escHtml(w.mode || 'TBD')}</span>
+            ${w.eligibility ? `<span class="meta-chip">👤 ${escHtml(w.eligibility)}</span>` : ''}
+          </div>
+          <p class="card-desc">${escHtml(w.description || '')}</p>
+          <div class="card-footer">
+            <span class="deadline ${isUrgent ? 'urgent' : ''}">${deadlineText}</span>
+            ${w.url
+              ? `<a class="source-link" href="${escHtml(w.url)}" target="_blank" rel="noopener">Visit →</a>`
+              : w.source
+              ? `<span class="source-link" title="${escHtml(w.source)}">Source</span>`
+              : ''}
+          </div>
+        </article>`;
+    }).join('');
+  }
+
+  function isDeadlineSoon(deadline) {
+    try {
+      const d = new Date(deadline);
+      const diff = (d - Date.now()) / (1000 * 60 * 60 * 24);
+      return diff >= 0 && diff <= 7;
+    } catch { return false; }
+  }
+
+  function escHtml(s) {
+    return String(s || '')
+      .replace(/&/g,'&amp;').replace(/</g,'&lt;')
+      .replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+  }
+
+  // ── skeletons ──────────────────────────────────────────────────
+  function showSkeletons() {
+    document.getElementById('cards-grid').innerHTML = Array(6).fill(0).map(() => `
+      <div class="skeleton-card">
+        <div class="skel-line" style="height:16px;width:40%"></div>
+        <div class="skel-line" style="height:20px;width:85%;margin-top:6px"></div>
+        <div class="skel-line" style="height:14px;width:60%"></div>
+        <div class="skel-line" style="height:60px;width:100%"></div>
+      </div>`).join('');
+  }
+
+  function showError(msg) {
+    document.getElementById('cards-grid').innerHTML = `
+      <div class="error-state">
+        <div class="icon">⚠️</div>
+        <h3>Couldn't fetch live data</h3>
+        <p>${escHtml(msg)}</p>
+        <button class="retry-btn" onclick="fetchWorkshops()">Try Again</button>
+      </div>`;
+  }
+
+  function setStatus(msg) {
+    document.getElementById('status-text').textContent = msg;
+  }
+
+  // ── filters ────────────────────────────────────────────────────
+  document.querySelectorAll('.filter-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      activeFilter = btn.dataset.org;
+      if (allWorkshops.length > 0) renderCards(allWorkshops);
+    });
+  });
+
+  // ── auto-refresh every 30 minutes ─────────────────────────────
+  fetchWorkshops();
+  setInterval(fetchWorkshops, 30 * 60 * 1000);
+
+  const profileBtn = document.getElementById('profileBtn');
+  const profileMenu = document.getElementById('profileMenu');
+
+  function closeProfileMenu() {
+    profileMenu.classList.add('hidden');
+    profileBtn.setAttribute('aria-expanded', 'false');
+  }
+
+  function toggleProfileMenu() {
+    const isOpen = !profileMenu.classList.contains('hidden');
+    profileMenu.classList.toggle('hidden', isOpen);
+    profileBtn.setAttribute('aria-expanded', String(!isOpen));
+  }
+
+  profileBtn.addEventListener('click', event => {
+    event.stopPropagation();
+    toggleProfileMenu();
+  });
+
+  profileMenu.addEventListener('click', event => {
+    event.stopPropagation();
+  });
+
+  document.addEventListener('click', closeProfileMenu);
+  document.addEventListener('keydown', event => {
+    if (event.key === 'Escape') closeProfileMenu();
+  });
+</script>
+<script src="orbit-ai.js"></script>
+
+</body>
+</html>

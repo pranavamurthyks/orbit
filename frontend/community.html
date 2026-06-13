@@ -1,0 +1,342 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Orbit - Community</title>
+  <link rel="stylesheet" href="community.css" />
+  <link rel="stylesheet" href="orbit-ai.css" />
+</head>
+<body data-host-stage="0">
+  <canvas id="starCanvas"></canvas>
+  <div class="space-cursor" id="spaceCursor" aria-hidden="true">
+    <span class="rocket-flame"></span>
+    <span class="rocket-body"></span>
+  </div>
+
+  <nav class="navbar">
+    <a class="nav-logo" href="photography.html">✦ Orbit</a>
+    <div class="nav-links">
+      <a href="loading.html">Launch</a>
+      <a href="workshops.html">Dashboard</a>
+      <a href="photography.html">Photography</a>
+      <a href="iss.html">ISS Tracker</a>
+      <a href="vr.html">VR</a>
+      <a href="long-horizon-exchange.html">Time Dilation</a>
+      <a href="community.html" class="active">Community</a>
+    </div>
+    <div class="nav-user">
+      <span class="stardust-pill">✦ <span id="navStardust">1,240</span> pts</span>
+      <button class="avatar" id="profileBtn" type="button" aria-label="Open profile menu" aria-expanded="false">CG</button>
+      <div class="profile-menu hidden" id="profileMenu">
+        <div class="profile-head">
+          <div class="profile-avatar">CG</div>
+          <div>
+            <div class="profile-name">Cosmic Guest</div>
+            <div class="profile-role">Explorer Level 3</div>
+          </div>
+        </div>
+        <div class="profile-balance">
+          <span>Stardust Balance</span>
+          <strong><span id="profileStardust">1,240</span> pts</strong>
+        </div>
+        <div class="profile-stats">
+          <div><strong>2</strong><span>Sessions</span></div>
+          <div><strong>1</strong><span>Joined</span></div>
+          <div><strong>12</strong><span>Saved</span></div>
+        </div>
+        <div class="profile-actions">
+          <button type="button" data-profile-action="sessions">My Sessions</button>
+          <button type="button" data-profile-action="saved">Saved Events</button>
+          <button type="button" data-profile-action="settings">Profile Settings</button>
+        </div>
+        <button class="profile-signout" type="button" data-profile-action="signout">Sign out</button>
+      </div>
+    </div>
+  </nav>
+
+  <main class="community-shell">
+    <section class="page active" id="page-landing" aria-labelledby="community-title">
+      <div class="landing-card">
+        <header class="landing-header">
+          <span class="eyebrow">Orbit Community</span>
+          <h1 id="community-title">Choose how you want to join</h1>
+          <p>Host a skywatching session or find one already happening nearby.</p>
+        </header>
+
+        <div class="choice-grid mission-selector">
+          <button class="choice-card host-card" type="button" data-route="host">
+            <span class="card-stars" aria-hidden="true"></span>
+            <span class="satellite-orbit" aria-hidden="true"></span>
+            <span class="choice-icon host" aria-hidden="true">
+              <span class="mission-rocket"></span>
+            </span>
+            
+            <span class="choice-title">Host</span>
+            <span class="choice-copy">Design the observing plan, set coordinates, and guide the crew.</span>
+            <span class="choice-meta">Create session · Set funding · Lead crew</span>
+          </button>
+
+          <div class="or-badge celestial-link" aria-hidden="true">
+            <span class="connector-orbit"></span>
+            <span class="connector-spacecraft">
+              <span class="connector-flame"></span>
+              <span class="connector-craft-body"></span>
+            </span>
+          </div>
+
+          <button class="choice-card participant-card" type="button" data-route="participant">
+            <span class="card-stars" aria-hidden="true"></span>
+            <span class="constellation-map" aria-hidden="true"></span>
+            <span class="choice-icon participant" aria-hidden="true">
+              <span class="mission-telescope"></span>
+            </span>
+            
+            <span class="choice-title">Participant</span>
+            <span class="choice-copy">Join nearby sessions, contribute Stardust, and register your gear.</span>
+            <span class="choice-meta">Browse events · Join mission · Add gear</span>
+          </button>
+        </div>
+      </div>
+    </section>
+
+    <section class="page" id="page-host" aria-labelledby="host-title">
+      <div class="page-stack host-layout">
+        <div class="topbar">
+          <button class="back-btn" type="button" data-route="landing" aria-label="Back">←</button>
+          <div>
+            <span class="eyebrow">Host path</span>
+            <h1 id="host-title">Host a session</h1>
+          </div>
+        </div>
+
+        <aside class="launch-panel cosmos-panel" aria-label="Session progress">
+          <div class="cosmos-scene" id="cosmosScene">
+            <div class="cosmos-layer nebula-one"></div>
+            <div class="cosmos-layer nebula-two"></div>
+            <div class="cosmos-layer star-drift near"></div>
+            <div class="cosmos-layer star-drift far"></div>
+            <div class="planet-orbit">
+              <span class="planet"></span>
+              <span class="moon-dot"></span>
+            </div>
+            <div class="comet"></div>
+            <div class="progress-arc">
+              <strong id="progressPercent">0%</strong>
+            </div>
+          </div>
+          <div class="launch-readout">
+            <span id="hostProgressLabel">0 of 8 checks complete</span>
+            <strong id="hostStageLabel">Shape the session</strong>
+          </div>
+        </aside>
+
+        <form class="host-steps" id="hostForm">
+          <section class="form-step" data-step="0" data-stage-label="Name the mission">
+            <div class="step-kicker">01 / Basics</div>
+            <h2>What are we calling this night?</h2>
+            <p>Name it clearly so people know the vibe before they join.</p>
+            <label class="field">
+              <span>Title</span>
+              <input type="text" id="sessionTitle" data-progress-field placeholder="e.g. Orion watch party" required />
+            </label>
+          </section>
+
+          <section class="form-step" data-step="1" data-stage-label="Set the expectation">
+            <div class="step-kicker">02 / Context</div>
+            <h2>Tell people what to expect</h2>
+            <p>Equipment, mood, beginner-friendly details, and anything they should know.</p>
+            <label class="field">
+              <span>Description</span>
+              <textarea id="sessionDesc" data-progress-field placeholder="We will compare lunar shots, share telescope time, and help first-timers find Orion."></textarea>
+            </label>
+          </section>
+
+          <section class="form-step" data-step="2" data-stage-label="Lock the time window">
+            <div class="step-kicker">03 / Timing</div>
+            <h2>When is the launch window?</h2>
+            <p>Once date and time are filled, the cosmos panel shifts to the next layer.</p>
+            <div class="field-row">
+              <label class="field">
+                <span>Date</span>
+                <input type="date" id="sessionDate" data-progress-field required />
+              </label>
+              <label class="field">
+                <span>Time</span>
+                <input type="time" id="sessionTime" data-progress-field required />
+              </label>
+            </div>
+          </section>
+
+          <section class="form-step" data-step="3" data-stage-label="Pick the landing zone">
+            <div class="step-kicker">04 / Location</div>
+            <h2>Where should everyone meet?</h2>
+            <p>Tap the demo map to set coordinates, then add the human-readable spot.</p>
+            <button class="map-picker" id="mapPicker" type="button" data-progress-field>
+              <span class="map-icon" id="mapIcon">⌖</span>
+              <span id="mapLabel">Tap to set location</span>
+              <small id="mapCoords"></small>
+            </button>
+            <label class="field">
+              <span>Place name</span>
+              <input type="text" id="locationName" data-progress-field placeholder="e.g. Riverside dark-sky field" />
+            </label>
+          </section>
+
+          <section class="form-step" data-step="4" data-stage-label="Guide the crew in">
+            <div class="step-kicker">05 / Arrival</div>
+            <h2>How do people find you there?</h2>
+            <p>Add landmarks, parking notes, or where the group should look first.</p>
+            <label class="field">
+              <span>Meeting spot</span>
+              <textarea id="locationDesc" data-progress-field placeholder="Meet near the north gate by the red lamp post. Parking is beside the field."></textarea>
+            </label>
+          </section>
+
+          <section class="form-step" data-step="5" data-stage-label="Set the crew size">
+            <div class="step-kicker">06 / Capacity</div>
+            <h2>How many people can join?</h2>
+            <p>Keep it blank for unlimited, or set a number for smaller sessions.</p>
+            <label class="field">
+              <span>Max participants</span>
+              <input type="number" id="sessionCapacity" min="1" data-progress-field placeholder="Leave blank for unlimited" />
+            </label>
+          </section>
+
+          <section class="form-step" data-step="6" data-stage-label="Fuel the mission">
+            <div class="step-kicker">07 / Funding</div>
+            <h2>Want a funding pool?</h2>
+            <p>Participants can contribute for snacks, better viewing gear, or host support.</p>
+            <label class="toggle-row">
+              <span>
+                <strong>Enable funding pool</strong>
+                <small>Optional, but useful when the night has shared costs.</small>
+              </span>
+              <input type="checkbox" id="fundingToggle" />
+              <i aria-hidden="true"></i>
+            </label>
+
+            <div class="funding-options" id="fundingOptions">
+              <button class="funding-option" type="button" data-funding="experience">
+                <span class="funding-check"></span>
+                <span>
+                  <strong>Elevate the experience</strong>
+                  <small>Funds go toward materials, activities, or better viewing gear.</small>
+                </span>
+              </button>
+              <button class="funding-option" type="button" data-funding="host">
+                <span class="funding-check"></span>
+                <span>
+                  <strong>Feed the host</strong>
+                  <small>A small thank-you pool for the person organizing the session.</small>
+                </span>
+              </button>
+              <label class="goal-row" id="goalRow">
+                <span>Goal</span>
+                <input type="number" id="goalAmount" min="0" step="any" placeholder="0.00" />
+              </label>
+            </div>
+          </section>
+
+          <section class="form-step final-step" data-step="7" data-stage-label="Ready to initiate">
+            <div class="step-kicker">Final check</div>
+            <h2>Initiate the session</h2>
+            <p>The session is shaped. Publish it to the participant list.</p>
+            <button class="submit-btn" type="submit">Initiate session</button>
+          </section>
+        </form>
+      </div>
+    </section>
+
+    <section class="page" id="page-participant" aria-labelledby="participant-title">
+      <div class="page-stack participant-layout">
+        <div class="topbar">
+          <button class="back-btn" type="button" data-route="landing" aria-label="Back">←</button>
+          <div>
+            <span class="eyebrow">Participant path</span>
+            <h1 id="participant-title">Find a session</h1>
+          </div>
+        </div>
+
+        <div class="participant-grid">
+          <div class="card session-browser">
+            <section class="card-section">
+              <div class="panel-head">
+                <div>
+                  <div class="section-label">Available sessions</div>
+                  <h2>Nearby skywatching</h2>
+                </div>
+                <span class="live-pill">Live</span>
+              </div>
+              <div class="session-list" id="sessionList"></div>
+            </section>
+          </div>
+
+          <div class="card session-detail" id="sessionDetail">
+            <section class="card-section detail-empty" id="sessionEmpty">
+              <div class="section-label">Session detail</div>
+              <p>Choose a session to see cost, contribution, payment link, and crew list.</p>
+            </section>
+
+            <section class="card-section detail-content hidden" id="sessionContent">
+              <div class="detail-head">
+                <span class="eyebrow">Selected session</span>
+                <h2 id="detailTitle"></h2>
+                <p id="detailDesc"></p>
+              </div>
+
+              <div class="detail-facts" id="detailFacts"></div>
+
+              <div class="cost-panel">
+                <div>
+                  <span>Registration cost</span>
+                  <strong><span id="detailCost"></span> Stardust</strong>
+                </div>
+                <small>Deducted when you join</small>
+              </div>
+
+              <form class="join-form" id="joinForm">
+                <label class="field">
+                  <span>Gear or supplies</span>
+                  <input type="text" id="bringingInput" placeholder="e.g. Telescope, tripod, snacks, red flashlight" required />
+                </label>
+
+                <div class="payment-grid">
+                  <label class="field">
+                    <span>Funding contribution</span>
+                    <input type="number" id="contributionAmount" min="0" step="1" placeholder="0" />
+                  </label>
+                  <label class="field">
+                    <span>Payment link</span>
+                    <select id="paymentLink">
+                      <option value="Orbit Pay">Orbit Pay</option>
+                      <option value="UPI">UPI</option>
+                      <option value="PayPal">PayPal</option>
+                      <option value="Cash at meetup">Cash at meetup</option>
+                    </select>
+                  </label>
+                </div>
+
+                <button class="submit-btn join-submit" type="submit">Join session</button>
+              </form>
+
+              <div class="crew-block">
+                <div class="panel-head compact">
+                  <div class="section-label">Participants + gear</div>
+                  <span class="crew-count" id="crewCount">0 listed</span>
+                </div>
+                <div class="crew-list" id="crewList"></div>
+              </div>
+            </section>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <div class="toast hidden" id="toast"></div>
+
+  <script src="community.js"></script>
+  <script src="orbit-ai.js"></script>
+</body>
+</html>
