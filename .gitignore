@@ -1,9 +1,0 @@
-node_modules
-.env
-.DS_Store
-backend/node_modules
-backend/.env
-whatsapp-sender/node_modules
-whatsapp-sender/.env
-whatsapp-sender/.wwebjs_auth
-whatsapp-sender/.wwebjs_cache
