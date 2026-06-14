@@ -1,7 +1,6 @@
 (function () {
-  const API_BASE = localStorage.getItem('orbitApiBase') ||
-    (window.location.protocol === 'file:' ? 'http://127.0.0.1:3000/api' : `${window.location.origin}/api`);
-
+  
+  const API_BASE = localStorage.getItem('orbitApiBase') || 'https://orbit-fkec.onrender.com';
   function getToken() {
     return localStorage.getItem('orbitAuthToken');
   }
@@ -32,7 +31,10 @@
       headers.Authorization = `Bearer ${token}`;
     }
 
-  const API_BASE = localStorage.getItem('orbitApiBase') || 'https://orbit-fkec.onrender.com';
+    const response = await fetch(`${API_BASE}${path}`, {
+      ...options,
+      headers,
+    });
 
     const data = await response.json().catch(() => ({}));
     if (!response.ok) {
