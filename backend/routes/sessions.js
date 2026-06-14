@@ -2,6 +2,7 @@ const express = require('express');
 const Session = require('../models/Session');
 const requireAuth = require('../middleware/auth');
 const { ensureDemoContent } = require('../services/demoContent');
+const { buildSessionStart } = require('../services/sessionTiming');
 const { addLedgerEntry } = require('../services/stardustService');
 
 const router = express.Router();
@@ -24,6 +25,7 @@ function publicSession(session) {
         title: session.title,
         place: session.place,
         time: session.timeLabel,
+        startsAt: session.startsAt,
         seats: session.seatsLabel,
         cost: session.cost,
         fundingEnabled: Boolean(session.fundingPool?.enabled),
@@ -77,6 +79,7 @@ router.get('/', async (req, res) => {
 
 router.post('/', requireAuth, async (req, res) => {
     const { title, description, date, time, capacity, location, funding } = req.body;
+    const startsAt = buildSessionStart(date, time);
 
     const session = await Session.create({
         hostUserId: req.user._id,
@@ -85,6 +88,7 @@ router.post('/', requireAuth, async (req, res) => {
         description: description || 'New SkyFolk community session.',
         place: location?.name || 'Location pending',
         timeLabel: date && time ? `${date}, ${time}` : 'Time pending',
+        startsAt,
         seatsLabel: capacity ? `${capacity} spots` : 'Open spots',
         capacity: capacity ? Number(capacity) : null,
         cost: 25,

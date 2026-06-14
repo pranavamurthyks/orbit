@@ -1,19 +1,10 @@
 const express = require('express');
 const Session = require('../models/Session');
 const { getSkyOverview } = require('../services/skyService');
+const { countWatchPartyParticipants } = require('../services/sessionTiming');
 const { getSpaceWeatherSummary } = require('../services/spaceWeatherService');
 
 const router = express.Router();
-
-function distanceKm(lat1, lng1, lat2, lng2) {
-    const DEG = Math.PI / 180;
-    const R = 6371;
-    const dLat = (lat2 - lat1) * DEG;
-    const dLng = (lng2 - lng1) * DEG;
-    const a = Math.sin(dLat / 2) ** 2 +
-        Math.cos(lat1 * DEG) * Math.cos(lat2 * DEG) * Math.sin(dLng / 2) ** 2;
-    return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-}
 
 router.get('/overview', async (req, res) => {
     try {
@@ -28,15 +19,15 @@ router.get('/overview', async (req, res) => {
                 'location.lng': { $ne: null },
             }).lean(),
         ]);
-        const watchPartyCount = sessions.reduce((sum, session) => {
-            if (typeof session.location?.lat !== 'number' || typeof session.location?.lng !== 'number') {
-                return sum;
-            }
-            if (distanceKm(lat, lng, session.location.lat, session.location.lng) > 250) {
-                return sum;
-            }
-            return sum + (Array.isArray(session.participants) ? session.participants.length : 0);
-        }, 0);
+        const passTime = sky.iss.visiblePassConfirmed && sky.iss.nextVisiblePassAt
+            ? new Date(sky.iss.nextVisiblePassAt)
+            : null;
+        const watchPartyCount = countWatchPartyParticipants({
+            sessions,
+            observerLat: lat,
+            observerLng: lng,
+            passTime,
+        });
         const nextVisiblePassMinutes = sky.iss.nextVisiblePassMinutes;
         const relativisticOffsetMicroseconds = sky.iss.relativisticOffsetMicroseconds;
 

@@ -1,5 +1,6 @@
 const Photo = require('../models/Photo');
 const Session = require('../models/Session');
+const { inferSessionStart } = require('./sessionTiming');
 
 const PHOTO_SEEDS = [
     {
@@ -114,6 +115,7 @@ async function reconcileSeedPhotos() {
 
 async function reconcileSeedSessions() {
     for (const seed of SESSION_SEEDS) {
+        const startsAt = inferSessionStart(seed.timeLabel);
         const matches = await Session.find({
             hostUserId: null,
             title: seed.title,
@@ -128,7 +130,19 @@ async function reconcileSeedSessions() {
         }
 
         if (matches.length === 0) {
-            await Session.create(seed);
+            await Session.create({
+                ...seed,
+                startsAt,
+            });
+            continue;
+        }
+
+        const primary = matches[0];
+        const currentStartsAt = primary.startsAt ? new Date(primary.startsAt).getTime() : NaN;
+        const nextStartsAt = startsAt ? startsAt.getTime() : NaN;
+        if (currentStartsAt !== nextStartsAt) {
+            primary.startsAt = startsAt;
+            await primary.save();
         }
     }
 }

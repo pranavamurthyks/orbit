@@ -136,6 +136,10 @@ const sessionSchema = new mongoose.Schema(
             required: true,
             trim: true,
         },
+        startsAt: {
+            type: Date,
+            default: null,
+        },
         seatsLabel: {
             type: String,
             required: true,

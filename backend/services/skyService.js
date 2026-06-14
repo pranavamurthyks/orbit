@@ -7,6 +7,11 @@ const ISS_CATNR = 25544;
 const TLE_URL = `https://celestrak.org/NORAD/elements/gp.php?CATNR=${ISS_CATNR}&FORMAT=TLE`;
 const TLE_TTL_MS = 6 * 60 * 60 * 1000;
 const MIN_VISIBLE_ELEVATION_DEG = 10;
+const RELATIVITY_C = 299792458;
+const EARTH_MU = 3.986004418e14;
+const EARTH_RADIUS_M = 6371008.8;
+const EARTH_ROTATION_RATE = 7.2921159e-5;
+const ISS_LAUNCH_AT = new Date('1998-11-20T06:40:00Z');
 
 let tleCache = {
     expiresAt: 0,
@@ -147,30 +152,86 @@ function buildRaceWidget(speedKmS) {
     };
 }
 
+function getRelativisticOffsetMicroseconds(snapshot, lat, date) {
+    const elapsedSeconds = Math.max(0, (date.getTime() - ISS_LAUNCH_AT.getTime()) / 1000);
+    const orbitalSpeedMps = Number(snapshot?.speedKmS || 0) * 1000;
+    const orbitalRadiusM = EARTH_RADIUS_M + Number(snapshot?.altitudeKm || 0) * 1000;
+    const surfaceSpeedMps = EARTH_ROTATION_RATE * EARTH_RADIUS_M * Math.cos(satellite.degreesToRadians(lat));
+    const gravityDelta = EARTH_MU * ((1 / EARTH_RADIUS_M) - (1 / orbitalRadiusM)) / (RELATIVITY_C ** 2);
+    const velocityDelta = ((surfaceSpeedMps ** 2) - (orbitalSpeedMps ** 2)) / (2 * (RELATIVITY_C ** 2));
+    return Number(((gravityDelta + velocityDelta) * elapsedSeconds * 1e6).toFixed(3));
+}
+
 async function findNextPass(lat, lng, now = new Date()) {
     const { satrec } = await getIssSatrec();
+    let fallbackPass = null;
+    let activeVisiblePass = null;
+    let completedVisiblePass = null;
 
-    let fallbackMinutes = null;
-    for (let minute = 1; minute <= 24 * 60; minute += 1) {
+    for (let minute = 0; minute <= 24 * 60; minute += 1) {
         const date = new Date(now.getTime() + minute * 60000);
         const snapshot = getIssSnapshot(satrec, date, lat, lng);
         if (!snapshot) continue;
 
-        if (fallbackMinutes === null && snapshot.elevationDeg >= MIN_VISIBLE_ELEVATION_DEG) {
-            fallbackMinutes = minute;
+        if (!fallbackPass && snapshot.elevationDeg >= MIN_VISIBLE_ELEVATION_DEG) {
+            fallbackPass = {
+                minutesUntil: minute,
+                startsAt: date,
+                peakAt: date,
+                endsAt: date,
+                peakElevationDeg: snapshot.elevationDeg,
+                snapshot,
+                visible: false,
+            };
         }
 
         if (isVisiblePass(snapshot, date, lat, lng)) {
-            return {
-                minutesUntil: minute,
-                snapshot,
-                visible: true,
-            };
+            if (!activeVisiblePass) {
+                activeVisiblePass = {
+                    minutesUntil: minute,
+                    startsAt: date,
+                    peakAt: date,
+                    endsAt: date,
+                    peakElevationDeg: snapshot.elevationDeg,
+                    snapshot,
+                    visible: true,
+                };
+                continue;
+            }
+
+            activeVisiblePass.endsAt = date;
+            if (snapshot.elevationDeg > activeVisiblePass.peakElevationDeg) {
+                activeVisiblePass.peakElevationDeg = snapshot.elevationDeg;
+                activeVisiblePass.peakAt = date;
+                activeVisiblePass.snapshot = snapshot;
+            }
+            continue;
+        }
+
+        if (activeVisiblePass) {
+            completedVisiblePass = activeVisiblePass;
+            break;
         }
     }
 
+    if (!completedVisiblePass && activeVisiblePass) {
+        completedVisiblePass = activeVisiblePass;
+    }
+
+    if (completedVisiblePass) {
+        return completedVisiblePass;
+    }
+
+    if (fallbackPass) {
+        return fallbackPass;
+    }
+
     return {
-        minutesUntil: fallbackMinutes,
+        minutesUntil: null,
+        startsAt: null,
+        peakAt: null,
+        endsAt: null,
+        peakElevationDeg: null,
         snapshot: null,
         visible: false,
     };
@@ -191,6 +252,8 @@ async function getSkyOverview(lat, lng, screenTimeMinutes = 180) {
     const sunAltitudeDeg = satellite.radiansToDegrees(sunPosition.altitude);
     const moonAltitudeDeg = satellite.radiansToDegrees(moonPosition.altitude);
     const minutes = clamp(Math.round(Number(screenTimeMinutes) || 0), 0, 24 * 60);
+    const relativisticOffsetMicroseconds = getRelativisticOffsetMicroseconds(currentIss, lat, now);
+    const visibleNow = isVisiblePass(currentIss, now, lat, lng);
 
     return {
         location: {
@@ -225,9 +288,14 @@ async function getSkyOverview(lat, lng, screenTimeMinutes = 180) {
             elevationDeg: currentIss.elevationDeg,
             azimuthDeg: currentIss.azimuthDeg,
             nextVisiblePassMinutes: nextPass.minutesUntil,
+            nextVisiblePassAt: nextPass.startsAt ? nextPass.startsAt.toISOString() : null,
+            nextVisiblePassPeakAt: nextPass.peakAt ? nextPass.peakAt.toISOString() : null,
+            nextVisiblePassEndsAt: nextPass.endsAt ? nextPass.endsAt.toISOString() : null,
+            nextVisiblePassPeakElevationDeg: nextPass.peakElevationDeg,
+            visibleNow,
             visiblePassConfirmed: nextPass.visible,
             raceWidget: buildRaceWidget(currentIss.speedKmS),
-            relativisticOffsetMicroseconds: ((Date.now() / 1000) * 0.000011).toFixed(6),
+            relativisticOffsetMicroseconds,
             speedKmH: currentIss.speedKmH,
             dataSource: source,
         },
