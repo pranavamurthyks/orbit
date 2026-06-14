@@ -3,6 +3,7 @@ const requireAuth = require('../middleware/auth');
 const optionalAuth = require('../middleware/auth').optionalAuth;
 const MarketTrip = require('../models/MarketTrip');
 const { addLedgerEntry } = require('../services/stardustService');
+const { resolvePrediction } = require('../services/marketResolution');
 const {
     currentSnapshot,
     getMarketDefinitions,
@@ -88,22 +89,12 @@ router.post('/trip', requireAuth, async (req, res) => {
     const resolvedPredictions = normalizedPredictions.map((item, index) => {
         const market = marketDefinitions.find(entry => entry.key === item.marketKey) || marketDefinitions[index % marketDefinitions.length];
         const shared = marketLookup.get(market.key);
-        const winningPick = Math.abs(Math.round(Number(homeYears || 0) * 10) + index) % market.buckets.length;
-        const won = Number(item.pick) === winningPick;
-        const totalPool = shared ? shared.pools.reduce((sum, value) => sum + value, 0) : 0;
-        const winningPool = shared ? shared.pools[winningPick] : 0;
-        const multiplier = Math.min(4.2, Math.max(1.15, totalPool / Math.max(1, winningPool)));
-        const payout = won ? Math.round(Number(item.stake || 0) * multiplier) : 0;
-        const actualValue = Math.round(market.trend[market.trend.length - 1] * (1 + Number(homeYears || 0) * 0.02 + (winningPick - 1) * 0.08));
-        return {
-            marketKey: market.key,
-            pick: Number(item.pick),
-            resolvedBucket: winningPick,
-            stake: Number(item.stake || 0),
-            payout,
-            won,
-            actualValue,
-        };
+        return resolvePrediction({
+            market,
+            prediction: item,
+            sharedPools: Array.isArray(shared?.pools) ? shared.pools : market.buckets.map(() => 0),
+            homeYears,
+        });
     });
 
     const totalPayout = resolvedPredictions.reduce((sum, item) => sum + item.payout, 0);

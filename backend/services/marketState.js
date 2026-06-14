@@ -8,6 +8,7 @@ const DEFAULT_MARKET_DEFINITIONS = [
         trend: [29, 34, 37, 42, 46],
         blurb: 'NASA JPL fireball detections show how atmospheric entry events cluster from year to year.',
         unit: 'events',
+        stepYears: 1,
     },
     {
         key: 'exoplanets',
@@ -16,6 +17,7 @@ const DEFAULT_MARKET_DEFINITIONS = [
         trend: [836, 1061, 559, 434, 352],
         blurb: 'NASA Exoplanet Archive discovery counts by year reward players who understand survey cadence.',
         unit: 'discoveries',
+        stepYears: 1,
     },
     {
         key: 'solar',
@@ -24,6 +26,7 @@ const DEFAULT_MARKET_DEFINITIONS = [
         trend: [48, 63, 81, 109, 128],
         blurb: 'NOAA solar-cycle observations make the current phase of the Sun directly relevant to the market.',
         unit: 'sunspots',
+        stepYears: 1 / 12,
     },
 ];
 
@@ -118,6 +121,7 @@ function buildPublicMarkets() {
             data: market.trend,
             blurb: market.blurb,
             unit: market.unit || 'points',
+            stepYears: market.stepYears || 1,
             pools,
             sentiment: sentimentForPools(pools),
         };

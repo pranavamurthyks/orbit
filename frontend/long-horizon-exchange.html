@@ -808,13 +808,8 @@ let syncTimer=null;
 function mergeStaticModel(market,index){
   const fallback=TRENDS[index]||TRENDS[0];
     return {
-      unit:'index',
-    model:fallback?.model||'lin',
-    growthRate:fallback?.growthRate||.12,
-    period:fallback?.period||11,
-    amp:fallback?.amp||120,
-    base:fallback?.base||60,
-    rate:fallback?.rate||180,
+      unit:fallback?.unit||'index',
+    stepYears:fallback?.id==='solar'?1/12:1,
     ...market
   };
 }
@@ -1002,30 +997,35 @@ function makeChart(canvas, labels, data, color){
 }
 
 function project(t,yrs){
-  const last=t.data[t.data.length-1];
-  let v;
-  if(t.model==='exp') v=last*Math.pow(1+t.growthRate,yrs);
-  else if(t.model==='lin') v=last+t.rate*yrs;
-  else{
-    const ph=((YR1-2019+yrs)%t.period);
-    v=t.base+t.amp*Math.sin((ph/t.period)*Math.PI*2-Math.PI/2);
-    v=Math.max(0,v);
-  }
-  return v*(1+(Math.random()-.5)*.3);
+  const values=(Array.isArray(t.data)?t.data:[]).map(Number).filter(Number.isFinite);
+  const last=values[values.length-1]||0;
+  const stepYears=Number(t.stepYears)>0?Number(t.stepYears):(t.id==='solar'?1/12:1);
+  const diffs=[];
+  for(let index=1;index<values.length;index++) diffs.push(values[index]-values[index-1]);
+  const recent=diffs.slice(-3);
+  const annualTrend=recent.length
+    ? recent.reduce((sum,value)=>sum+value,0)/recent.length/stepYears
+    : 0;
+  const safeYears=Math.min(Math.max(Number(yrs)||0,0),6);
+  const damping=1-Math.min(.28,safeYears*.04);
+  return Math.max(0,last+(annualTrend*safeYears*damping));
 }
 
 function classify(t,yrs,actual){
-  const last=t.data[t.data.length-1];
-  let exp;
-  if(t.model==='exp') exp=last*Math.pow(1+t.growthRate,yrs);
-  else if(t.model==='lin') exp=last+t.rate*yrs;
-  else{
-    const ph=((YR1-2019+yrs)%t.period);
-    exp=t.base+t.amp*Math.sin((ph/t.period)*Math.PI*2-Math.PI/2);
-    exp=Math.max(0,exp);
+  const values=(Array.isArray(t.data)?t.data:[]).map(Number).filter(Number.isFinite);
+  const last=values[values.length-1]||1;
+  const stepYears=Number(t.stepYears)>0?Number(t.stepYears):(t.id==='solar'?1/12:1);
+  const pctDiffs=[];
+  for(let index=1;index<values.length;index++){
+    const previous=Math.max(1,Math.abs(values[index-1]));
+    pctDiffs.push(Math.abs((values[index]-values[index-1])/previous)/stepYears);
   }
-  const r=actual/exp;
-  return r<.9?0:r>1.1?2:1;
+  const recent=pctDiffs.slice(-3);
+  const avgVol=recent.length?recent.reduce((sum,value)=>sum+value,0)/recent.length:.04;
+  const safeYears=Math.min(Math.max(Number(yrs)||0,0),6);
+  const band=Math.min(.2,Math.max(.04,avgVol*Math.sqrt(Math.max(stepYears,safeYears||stepYears))*.75));
+  const changePct=(actual-last)/Math.max(1,last);
+  return changePct<-band?0:changePct>band?2:1;
 }
 
 function buildMarkets(){
@@ -1282,7 +1282,8 @@ async function resolveTrip(){
         val:settled?.actualValue??project(m,hy),
         bucket:settled?.resolvedBucket??classify(m,hy,project(m,hy)),
         won:Boolean(settled?.won),
-        payout:settled?.payout??0
+        payout:settled?.payout??0,
+        summary:settled?.resolutionSummary||''
       };
     });
   }catch(error){
@@ -1292,7 +1293,14 @@ async function resolveTrip(){
       const won=bucket===m.pick;
       const tot=m.pools.reduce((a,b)=>a+b,0);
       const o=Math.max(1.1,tot/Math.max(1,m.pools[m.pick??0]));
-      return{m,val,bucket,won,payout:won?Math.round(m.stake*o):0};
+      return{
+        m,
+        val,
+        bucket,
+        won,
+        payout:won?Math.round(m.stake*o):0,
+        summary:'Resolved from the recent live trend shape because the backend was unavailable.'
+      };
     });
     outcomes=fallback;
     totalPayout=fallback.reduce((a,o)=>a+o.payout,0);
@@ -1307,7 +1315,7 @@ async function resolveTrip(){
     const sign=pct>0?'+':'';
     const unit=o.m.unit||'units';
     const movement=pct==='0' ? 'held close to where it started' : `${sign}${pct}% from when you left`;
-    const txt=`${o.m.title} landed near ${Math.round(o.val).toLocaleString()} ${unit} and ${movement}.`;
+    const txt=o.summary||`${o.m.title} landed near ${Math.round(o.val).toLocaleString()} ${unit} and ${movement}.`;
     return{txt,cls:o.won?'w':'l'};
   });
 

@@ -16,6 +16,14 @@ const mapPicker = document.getElementById('mapPicker');
 const mapIcon = document.getElementById('mapIcon');
 const mapLabel = document.getElementById('mapLabel');
 const mapCoords = document.getElementById('mapCoords');
+const mapModal = document.getElementById('mapModal');
+const mapModalBackdrop = document.getElementById('mapModalBackdrop');
+const mapCloseBtn = document.getElementById('mapCloseBtn');
+const mapUseLocationBtn = document.getElementById('mapUseLocationBtn');
+const mapResetBtn = document.getElementById('mapResetBtn');
+const mapConfirmBtn = document.getElementById('mapConfirmBtn');
+const mapCancelBtn = document.getElementById('mapCancelBtn');
+const mapSelectionStatus = document.getElementById('mapSelectionStatus');
 const fundingToggle = document.getElementById('fundingToggle');
 const fundingOptions = document.getElementById('fundingOptions');
 const goalRow = document.getElementById('goalRow');
@@ -45,6 +53,9 @@ const cancelBtn = document.getElementById('cancelBtn');
 const fundingSummary = document.getElementById('fundingSummary');
 const fundingPoolMeta = document.getElementById('fundingPoolMeta');
 const fundingMethodCard = document.getElementById('fundingMethodCard');
+const fundingActionBar = document.getElementById('fundingActionBar');
+const openPaymentBtn = document.getElementById('openPaymentBtn');
+const copyPaymentBtn = document.getElementById('copyPaymentBtn');
 const fundingLedger = document.getElementById('fundingLedger');
 const fundingSpendList = document.getElementById('fundingSpendList');
 const contributionForm = document.getElementById('contributionForm');
@@ -57,6 +68,9 @@ let selectedFundingOption = null;
 let selectedSessionId = null;
 let toastTimer = null;
 let myStardust = getInitialStardust();
+let locationMap = null;
+let locationMarker = null;
+let pendingLocation = null;
 let W = 0;
 let H = 0;
 let stars = [];
@@ -245,6 +259,130 @@ function setMapLocation(lat, lng, label) {
   updateHostProgress();
 }
 
+function formatLatLng(lat, lng) {
+  return `${lat.toFixed(5)}, ${lng.toFixed(5)}`;
+}
+
+async function reverseGeocode(lat, lng) {
+  const url = new URL('https://nominatim.openstreetmap.org/reverse');
+  url.searchParams.set('format', 'jsonv2');
+  url.searchParams.set('lat', String(lat));
+  url.searchParams.set('lon', String(lng));
+  url.searchParams.set('zoom', '16');
+  url.searchParams.set('accept-language', 'en');
+
+  try {
+    const response = await fetch(url.toString(), {
+      headers: {
+        Accept: 'application/json',
+      },
+    });
+    if (!response.ok) return '';
+    const result = await response.json();
+    return String(result.display_name || '').trim();
+  } catch {
+    return '';
+  }
+}
+
+function updatePendingLocation(lat, lng, label = '') {
+  pendingLocation = {
+    lat,
+    lng,
+    label: label || `Pinned location (${formatLatLng(lat, lng)})`,
+  };
+
+  if (locationMarker) {
+    locationMarker.setLatLng([lat, lng]);
+  } else if (locationMap && window.L) {
+    locationMarker = window.L.marker([lat, lng]).addTo(locationMap);
+  }
+
+  if (locationMap) {
+    locationMap.setView([lat, lng], Math.max(locationMap.getZoom(), 13), { animate: true });
+  }
+
+  mapSelectionStatus.textContent = `${pendingLocation.label} · ${formatLatLng(lat, lng)}`;
+  mapConfirmBtn.disabled = false;
+}
+
+function ensureLocationMap() {
+  if (locationMap || !window.L) return;
+
+  locationMap = window.L.map('locationMap', {
+    zoomControl: true,
+    attributionControl: true,
+  }).setView([20.5937, 78.9629], 4);
+
+  window.L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    maxZoom: 19,
+    attribution: '&copy; OpenStreetMap contributors',
+  }).addTo(locationMap);
+
+  locationMap.on('click', async (event) => {
+    updatePendingLocation(event.latlng.lat, event.latlng.lng);
+    const label = await reverseGeocode(event.latlng.lat, event.latlng.lng);
+    if (pendingLocation && pendingLocation.lat === event.latlng.lat && pendingLocation.lng === event.latlng.lng && label) {
+      pendingLocation.label = label;
+      mapSelectionStatus.textContent = `${label} · ${formatLatLng(event.latlng.lat, event.latlng.lng)}`;
+    }
+  });
+}
+
+function openMapModal() {
+  ensureLocationMap();
+  if (!locationMap) {
+    showToast('Map tiles are unavailable right now');
+    return;
+  }
+  mapModal.classList.remove('hidden');
+  mapModal.setAttribute('aria-hidden', 'false');
+  document.body.style.overflow = 'hidden';
+
+  const savedLat = Number(mapPicker.dataset.lat || 0);
+  const savedLng = Number(mapPicker.dataset.lng || 0);
+  if (Number.isFinite(savedLat) && Number.isFinite(savedLng) && mapPicker.dataset.lat && mapPicker.dataset.lng) {
+    updatePendingLocation(savedLat, savedLng, mapPicker.dataset.label || 'Saved location');
+  } else {
+    pendingLocation = null;
+    mapSelectionStatus.textContent = 'No pin selected yet.';
+    mapConfirmBtn.disabled = true;
+  }
+
+  setTimeout(() => locationMap?.invalidateSize(), 30);
+}
+
+function closeMapModal() {
+  mapModal.classList.add('hidden');
+  mapModal.setAttribute('aria-hidden', 'true');
+  document.body.style.overflow = '';
+}
+
+async function useCurrentLocationForMap() {
+  if (!navigator.geolocation) {
+    showToast('This browser does not expose geolocation');
+    return;
+  }
+
+  mapSelectionStatus.textContent = 'Looking up your current location...';
+  navigator.geolocation.getCurrentPosition(async (position) => {
+    const lat = position.coords.latitude;
+    const lng = position.coords.longitude;
+    updatePendingLocation(lat, lng, 'Current location');
+    const label = await reverseGeocode(lat, lng);
+    if (pendingLocation && pendingLocation.lat === lat && pendingLocation.lng === lng && label) {
+      pendingLocation.label = label;
+      mapSelectionStatus.textContent = `${label} · ${formatLatLng(lat, lng)}`;
+    }
+  }, () => {
+    mapSelectionStatus.textContent = 'Location lookup was denied or unavailable.';
+  }, {
+    enableHighAccuracy: true,
+    timeout: 12000,
+    maximumAge: 60000,
+  });
+}
+
 function clearFundingSelection() {
   selectedFundingOption = null;
   document.querySelectorAll('.funding-option').forEach(option => {
@@ -289,6 +427,103 @@ function escapeHtml(value) {
     .replaceAll('>', '&gt;')
     .replaceAll('"', '&quot;')
     .replaceAll("'", '&#039;');
+}
+
+function selectedContributionAmount() {
+  return Math.max(0, Math.floor(Number(contributionAmount.value) || 0));
+}
+
+function isProbablyUrl(value) {
+  return /^https?:\/\//i.test(String(value || '').trim());
+}
+
+function buildPaymentDetails(session, amount = selectedContributionAmount()) {
+  const method = String(session?.fundingPaymentMethod || '').trim();
+  const handle = String(session?.fundingPaymentHandle || '').trim();
+  const instructions = String(session?.fundingPaymentInstructions || '').trim();
+  const currency = String(session?.fundingCurrency || 'INR').trim();
+  const payee = String(session?.hostName || 'SkyFolk host').trim();
+  const note = `${session?.title || 'SkyFolk session'} funding contribution`;
+
+  const summaryLines = [
+    `${session?.title || 'Session'} funding pool`,
+    `Method: ${method || 'Manual payment'}`,
+  ];
+
+  if (handle) summaryLines.push(`Handle/link: ${handle}`);
+  if (amount > 0) summaryLines.push(`Suggested amount: ${amount} ${currency}`);
+  if (instructions) summaryLines.push(`Instructions: ${instructions}`);
+
+  if (!method && !handle && !instructions) {
+    return {
+      summary: summaryLines.join('\n'),
+      actionLabel: '',
+      actionUrl: '',
+    };
+  }
+
+  if (isProbablyUrl(handle)) {
+    return {
+      summary: summaryLines.join('\n'),
+      actionLabel: method === 'Razorpay' ? 'Open Razorpay link' : 'Open payment link',
+      actionUrl: handle,
+    };
+  }
+
+  if (method === 'UPI' && handle) {
+    const params = new URLSearchParams({
+      pa: handle,
+      pn: payee,
+      cu: currency,
+      tn: note,
+    });
+    if (amount > 0) {
+      params.set('am', String(amount));
+    }
+    return {
+      summary: summaryLines.join('\n'),
+      actionLabel: 'Open UPI app',
+      actionUrl: `upi://pay?${params.toString()}`,
+    };
+  }
+
+  return {
+    summary: summaryLines.join('\n'),
+    actionLabel: handle ? 'Use payment details' : '',
+    actionUrl: '',
+  };
+}
+
+function renderFundingActions(session) {
+  if (!session?.fundingEnabled) {
+    fundingMethodCard.textContent = '';
+    fundingMethodCard.classList.add('hidden');
+    fundingActionBar.classList.add('hidden');
+    return;
+  }
+
+  const amount = selectedContributionAmount();
+  const payment = buildPaymentDetails(session, amount);
+  const parts = [
+    `<strong>${escapeHtml(session.fundingPaymentMethod || session.fundingType || 'Funding pool')}</strong>`,
+  ];
+
+  if (session.fundingPaymentHandle) {
+    const handle = escapeHtml(session.fundingPaymentHandle);
+    parts.push(isProbablyUrl(session.fundingPaymentHandle) ? `<a href="${handle}" target="_blank" rel="noreferrer">${handle}</a>` : `Handle: ${handle}`);
+  }
+  if (amount > 0) {
+    parts.push(`Suggested amount: ${amount} ${escapeHtml(session.fundingCurrency || 'INR')}`);
+  }
+  parts.push(escapeHtml(session.fundingPaymentInstructions || 'Record contributions separately from Stardust and track refunds transparently.'));
+
+  fundingMethodCard.innerHTML = parts.join('<br>');
+  fundingMethodCard.classList.remove('hidden');
+
+  openPaymentBtn.textContent = payment.actionLabel || 'Open payment';
+  openPaymentBtn.disabled = !payment.actionUrl;
+  copyPaymentBtn.disabled = !payment.summary;
+  fundingActionBar.classList.toggle('hidden', !payment.summary && !payment.actionUrl);
 }
 
 function renderSessions() {
@@ -343,6 +578,9 @@ function selectSession(sessionId) {
   contributionAmount.value = '';
   contributionReference.value = '';
   bringingInput.value = '';
+  if (session.fundingPaymentMethod && Array.from(paymentLink.options).some(option => option.value === session.fundingPaymentMethod)) {
+    paymentLink.value = session.fundingPaymentMethod;
+  }
   joinForm.classList.toggle('hidden', session.status === 'cancelled');
   hostActions.classList.toggle('hidden', !isHost);
   contributionForm.classList.toggle('hidden', !(session.fundingEnabled && session.status !== 'cancelled'));
@@ -356,17 +594,7 @@ function selectSession(sessionId) {
     fundingSummary.textContent = '';
     fundingSummary.classList.add('hidden');
   }
-  if (session.fundingEnabled) {
-    fundingMethodCard.innerHTML = `
-      <strong>${escapeHtml(session.fundingPaymentMethod || session.fundingType || 'Funding pool')}</strong><br>
-      ${session.fundingPaymentHandle ? `Handle/link: ${escapeHtml(session.fundingPaymentHandle)}<br>` : ''}
-      ${session.fundingPaymentInstructions ? escapeHtml(session.fundingPaymentInstructions) : 'Record contributions separately from Stardust and track refunds transparently.'}
-    `;
-    fundingMethodCard.classList.remove('hidden');
-  } else {
-    fundingMethodCard.textContent = '';
-    fundingMethodCard.classList.add('hidden');
-  }
+  renderFundingActions(session);
   renderFundingLedger(session, isHost);
   renderCrew(session);
 }
@@ -471,9 +699,32 @@ progressFields.forEach(field => {
   field.addEventListener('change', updateHostProgress);
 });
 
-mapPicker.addEventListener('click', () => {
-  setMapLocation(14.5832, 121.0000, 'Rizal Park, Manila');
-  showToast('Demo location set');
+mapPicker.addEventListener('click', openMapModal);
+
+mapModalBackdrop.addEventListener('click', closeMapModal);
+mapCloseBtn.addEventListener('click', closeMapModal);
+mapCancelBtn.addEventListener('click', closeMapModal);
+
+mapUseLocationBtn.addEventListener('click', useCurrentLocationForMap);
+
+mapResetBtn.addEventListener('click', () => {
+  pendingLocation = null;
+  mapSelectionStatus.textContent = 'No pin selected yet.';
+  mapConfirmBtn.disabled = true;
+  if (locationMarker && locationMap) {
+    locationMap.removeLayer(locationMarker);
+    locationMarker = null;
+  }
+});
+
+mapConfirmBtn.addEventListener('click', () => {
+  if (!pendingLocation) {
+    showToast('Pick a point on the map first');
+    return;
+  }
+  setMapLocation(pendingLocation.lat, pendingLocation.lng, pendingLocation.label);
+  closeMapModal();
+  showToast('Location pinned for this session');
 });
 
 fundingToggle.addEventListener('change', () => {
@@ -583,6 +834,44 @@ contributionForm.addEventListener('submit', async event => {
   }
 });
 
+contributionAmount.addEventListener('input', () => {
+  const session = demoSessions.find(item => String(item.id) === selectedSessionId);
+  if (session) renderFundingActions(session);
+});
+
+paymentLink.addEventListener('change', () => {
+  const session = demoSessions.find(item => String(item.id) === selectedSessionId);
+  if (session) renderFundingActions(session);
+});
+
+openPaymentBtn.addEventListener('click', () => {
+  const session = demoSessions.find(item => String(item.id) === selectedSessionId);
+  if (!session) return;
+  const payment = buildPaymentDetails(session);
+  if (!payment.actionUrl) {
+    showToast('No direct payment link is available for this session');
+    return;
+  }
+  if (payment.actionUrl.startsWith('http://') || payment.actionUrl.startsWith('https://')) {
+    window.open(payment.actionUrl, '_blank', 'noopener,noreferrer');
+    return;
+  }
+  window.location.href = payment.actionUrl;
+});
+
+copyPaymentBtn.addEventListener('click', async () => {
+  const session = demoSessions.find(item => String(item.id) === selectedSessionId);
+  if (!session) return;
+  const payment = buildPaymentDetails(session);
+
+  try {
+    await navigator.clipboard.writeText(payment.summary);
+    showToast('Payment details copied');
+  } catch {
+    showToast('Clipboard access failed');
+  }
+});
+
 function parseSpendItems(input) {
   return String(input || '')
     .split('\n')
@@ -673,7 +962,10 @@ profileMenu.addEventListener('click', event => {
 document.addEventListener('click', closeProfileMenu);
 
 document.addEventListener('keydown', event => {
-  if (event.key === 'Escape') closeProfileMenu();
+  if (event.key === 'Escape') {
+    closeProfileMenu();
+    if (!mapModal.classList.contains('hidden')) closeMapModal();
+  }
 });
 
 loadSessions();

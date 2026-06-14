@@ -15,6 +15,7 @@ async function fetchExoplanetMarket() {
         trend: recent.map(row => Number(row.c || 0)),
         blurb: 'NASA Exoplanet Archive discovery counts by year reward players who understand survey cadence.',
         unit: 'discoveries',
+        stepYears: 1,
     };
 }
 
@@ -32,6 +33,7 @@ async function fetchSolarMarket() {
         trend: recent.map(row => Number(row.ssn || 0)),
         blurb: 'NOAA solar-cycle observations make the current phase of the Sun directly relevant to the market.',
         unit: 'sunspots',
+        stepYears: 1 / 12,
     };
 }
 
@@ -56,6 +58,7 @@ async function fetchFireballMarket() {
         trend: years.map(year => counts.get(year) || 0),
         blurb: 'NASA JPL fireball detections show how atmospheric entry events cluster from year to year.',
         unit: 'events',
+        stepYears: 1,
     };
 }
 

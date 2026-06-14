@@ -926,6 +926,89 @@ button {
   opacity: 0.74;
 }
 
+.map-modal {
+  position: fixed;
+  inset: 0;
+  z-index: 120;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+}
+
+.map-modal-backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgba(1, 4, 14, 0.76);
+  backdrop-filter: blur(10px);
+}
+
+.map-modal-card {
+  position: relative;
+  z-index: 1;
+  width: min(820px, calc(100vw - 32px));
+  border: 1px solid var(--border-hi);
+  border-radius: 18px;
+  background: rgba(6, 9, 30, 0.96);
+  box-shadow: 0 28px 80px rgba(0, 0, 0, 0.42);
+  padding: 22px;
+  display: grid;
+  gap: 14px;
+}
+
+.map-close-btn {
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  border: 1px solid var(--border);
+  background: rgba(255, 255, 255, 0.04);
+  color: var(--text);
+  font-size: 24px;
+  line-height: 1;
+}
+
+.map-modal-copy,
+.map-selection {
+  color: var(--text-muted);
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.map-modal-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.map-stage {
+  border-radius: 16px;
+  overflow: hidden;
+  border: 1px solid rgba(150, 170, 255, 0.18);
+  background: rgba(255, 255, 255, 0.03);
+}
+
+.location-map {
+  width: 100%;
+  height: 360px;
+}
+
+.map-selection {
+  min-height: 20px;
+}
+
+.leaflet-container {
+  background: #081022;
+  font: inherit;
+}
+
+.leaflet-control-attribution {
+  background: rgba(6, 9, 30, 0.88) !important;
+  color: var(--text-muted) !important;
+}
+
+.leaflet-control-attribution a {
+  color: var(--accent) !important;
+}
+
 .toggle-row {
   display: flex;
   align-items: center;
@@ -1384,6 +1467,21 @@ button {
   margin-top: 12px;
 }
 
+.funding-actions {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+  margin-top: 12px;
+}
+
+.funding-method strong {
+  color: var(--text);
+}
+
+.funding-method a {
+  color: var(--teal);
+}
+
 .contribution-form {
   margin-top: 14px;
 }
@@ -1594,6 +1692,18 @@ button {
 }
 
 @media (max-width: 560px) {
+  .map-modal {
+    padding: 12px;
+  }
+
+  .map-modal-card {
+    padding: 16px;
+  }
+
+  .location-map {
+    height: 300px;
+  }
+
   .landing-card {
     min-height: 0;
   }
@@ -1614,5 +1724,10 @@ button {
 
   .form-step {
     padding: 22px;
+  }
+
+  .funding-actions,
+  .host-action-grid {
+    grid-template-columns: 1fr;
   }
 }

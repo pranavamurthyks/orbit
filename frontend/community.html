@@ -4,6 +4,12 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>SkyFolk - Community</title>
+  <link
+    rel="stylesheet"
+    href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+    integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY="
+    crossorigin=""
+  />
   <link rel="stylesheet" href="community.css" />
 </head>
 <body data-host-stage="0">
@@ -171,10 +177,10 @@
           <section class="form-step" data-step="3" data-stage-label="Pick the landing zone">
             <div class="step-kicker">04 / Location</div>
             <h2>Where should everyone meet?</h2>
-            <p>Tap the demo map to set coordinates, then add the human-readable spot.</p>
-              <button class="map-picker" id="mapPicker" type="button" data-progress-field>
+            <p>Pin the meetup on the map, then add the human-readable spot.</p>
+            <button class="map-picker" id="mapPicker" type="button" data-progress-field>
               <span class="map-icon" id="mapIcon">⌖</span>
-              <span id="mapLabel">Tap to set location</span>
+              <span id="mapLabel">Open map picker</span>
               <small id="mapCoords"></small>
             </button>
             <label class="field">
@@ -326,9 +332,9 @@
                   <label class="field">
                     <span>Payment method</span>
                     <select id="paymentLink">
-                      <option value="Orbit Pay">Orbit Pay</option>
                       <option value="UPI">UPI</option>
-                      <option value="PayPal">PayPal</option>
+                      <option value="Razorpay">Razorpay</option>
+                      <option value="Bank transfer">Bank transfer</option>
                       <option value="Cash at meetup">Cash at meetup</option>
                     </select>
                   </label>
@@ -348,6 +354,10 @@
                 </div>
                 <div class="funding-summary hidden" id="fundingSummary"></div>
                 <div class="funding-method hidden" id="fundingMethodCard"></div>
+                <div class="funding-actions hidden" id="fundingActionBar">
+                  <button class="submit-btn host-action-btn" id="openPaymentBtn" type="button">Open payment</button>
+                  <button class="submit-btn host-action-btn ghost" id="copyPaymentBtn" type="button">Copy details</button>
+                </div>
                 <form class="contribution-form hidden" id="contributionForm">
                   <div class="payment-grid">
                     <label class="field">
@@ -399,8 +409,39 @@
     </section>
   </main>
 
+  <div class="map-modal hidden" id="mapModal" aria-hidden="true">
+    <div class="map-modal-backdrop" id="mapModalBackdrop"></div>
+    <div class="map-modal-card" role="dialog" aria-modal="true" aria-labelledby="mapModalTitle">
+      <div class="panel-head compact">
+        <div>
+          <div class="section-label">Map picker</div>
+          <h2 id="mapModalTitle">Choose the meetup point</h2>
+        </div>
+        <button class="map-close-btn" id="mapCloseBtn" type="button" aria-label="Close map picker">×</button>
+      </div>
+      <p class="map-modal-copy">Click the map to pin the exact location, or jump to your current position first.</p>
+      <div class="map-modal-actions">
+        <button class="submit-btn host-action-btn ghost" id="mapUseLocationBtn" type="button">Use my location</button>
+        <button class="submit-btn host-action-btn ghost" id="mapResetBtn" type="button">Reset pin</button>
+      </div>
+      <div class="map-stage">
+        <div id="locationMap" class="location-map" aria-label="Location picker map"></div>
+      </div>
+      <div class="map-selection" id="mapSelectionStatus">No pin selected yet.</div>
+      <div class="map-modal-actions">
+        <button class="submit-btn host-action-btn ghost" id="mapCancelBtn" type="button">Cancel</button>
+        <button class="submit-btn host-action-btn" id="mapConfirmBtn" type="button">Use this location</button>
+      </div>
+    </div>
+  </div>
+
   <div class="toast hidden" id="toast"></div>
 
+  <script
+    src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+    integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo="
+    crossorigin=""
+  ></script>
   <script src="api.js"></script>
   <script src="ui-effects.js"></script>
   <script src="community.js"></script>
