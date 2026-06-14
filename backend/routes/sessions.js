@@ -61,11 +61,11 @@ function publicSession(session) {
         desc: session.description,
         location: session.location,
         skyContext: session.skyContext,
-        participants: session.participants.map(item => ({
-            name: item.name,
-            initials: item.initials,
-            bringing: item.bringing,
-        })),
+        participants: Array.isArray(session.participants) ? session.participants.map(item => ({
+    name: item.name,
+    initials: item.initials,
+    bringing: item.bringing,
+})) : [],
     };
 }
 

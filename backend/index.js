@@ -1,13 +1,15 @@
+require('dotenv').config();
+
 const express = require('express');
 const app = express();
-require('dotenv').config();
+
 const cors = require('cors');
 const path = require('path');
 const connectDatabase = require('./db');
 
 app.use(cors({
-    origin: process.env.CLIENT_ORIGIN || 'http://localhost:5173',
-    credentials: true,
+    origin: '*',
+    credentials: false,
 }));
 app.use(express.json());
 
