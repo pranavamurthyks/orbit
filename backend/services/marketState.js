@@ -1,36 +1,40 @@
-const MARKET_DEFINITIONS = [
+const { fetchLiveMarketDefinitions } = require('./liveMarketData');
+
+const DEFAULT_MARKET_DEFINITIONS = [
     {
-        key: 'satellites',
-        title: 'Active satellites in orbit',
-        buckets: ['cooling', 'steady', 'surging'],
-        trend: [8200, 9100, 9800, 10500, 11100],
-        blurb: 'Orbital infrastructure keeps expanding as launches accumulate.',
+        key: 'fireballs',
+        title: 'NASA-recorded fireball events',
+        buckets: ['quiet streak', 'steady cadence', 'surge year'],
+        trend: [29, 34, 37, 42, 46],
+        blurb: 'NASA JPL fireball detections show how atmospheric entry events cluster from year to year.',
+        unit: 'events',
     },
     {
         key: 'exoplanets',
-        title: 'Confirmed exoplanets',
-        buckets: ['slow discoveries', 'steady growth', 'breakthrough spike'],
-        trend: [5400, 5480, 5550, 5620, 5700],
-        blurb: 'Discovery counts keep climbing, but not at a flat rate every year.',
+        title: 'Confirmed exoplanet discoveries',
+        buckets: ['cooler year', 'on-trend year', 'breakthrough spike'],
+        trend: [836, 1061, 559, 434, 352],
+        blurb: 'NASA Exoplanet Archive discovery counts by year reward players who understand survey cadence.',
+        unit: 'discoveries',
     },
     {
         key: 'solar',
-        title: 'Solar activity index',
-        buckets: ['quiet sun', 'mid-cycle', 'stormy peak'],
+        title: 'Monthly sunspot number',
+        buckets: ['quiet sun', 'on-cycle', 'stormy jump'],
         trend: [48, 63, 81, 109, 128],
-        blurb: 'Solar cycle timing matters. A player who understands the cycle has a real edge.',
+        blurb: 'NOAA solar-cycle observations make the current phase of the Sun directly relevant to the market.',
+        unit: 'sunspots',
     },
 ];
 
-const BASE_POOLS = new Map(MARKET_DEFINITIONS.map((market) => [
-    market.key,
-    market.buckets.map((_, index) => 140 + index * 45),
-]));
+let marketDefinitions = DEFAULT_MARKET_DEFINITIONS;
+let liveDefinitionsExpiresAt = 0;
 
 const activityFeed = [];
 const activeStakes = new Map();
 const subscribers = new Set();
 const ACTIVE_STAKE_TTL_MS = 2 * 60 * 1000;
+const LIVE_MARKET_TTL_MS = 6 * 60 * 60 * 1000;
 
 function clamp(value, min, max) {
     return Math.max(min, Math.min(max, value));
@@ -65,12 +69,35 @@ function sentimentForPools(pools) {
     return Number(clamp(skew * 0.18, -0.05, 0.05).toFixed(3));
 }
 
+function getMarketDefinitions() {
+    return marketDefinitions;
+}
+
+async function refreshMarketDefinitions() {
+    if (liveDefinitionsExpiresAt > Date.now()) {
+        return marketDefinitions;
+    }
+
+    try {
+        const nextDefinitions = await fetchLiveMarketDefinitions();
+        if (Array.isArray(nextDefinitions) && nextDefinitions.length) {
+            marketDefinitions = nextDefinitions;
+            liveDefinitionsExpiresAt = Date.now() + LIVE_MARKET_TTL_MS;
+        }
+    } catch {
+        liveDefinitionsExpiresAt = Date.now() + 5 * 60 * 1000;
+    }
+
+    return marketDefinitions;
+}
+
 function buildPublicMarkets() {
     pruneActiveStakes();
+    const definitions = getMarketDefinitions();
 
-    const poolMap = new Map(MARKET_DEFINITIONS.map((market) => [
+    const poolMap = new Map(definitions.map((market) => [
         market.key,
-        [...(BASE_POOLS.get(market.key) || [])],
+        market.buckets.map((_, index) => 140 + index * 45),
     ]));
 
     for (const entry of activeStakes.values()) {
@@ -82,7 +109,7 @@ function buildPublicMarkets() {
         });
     }
 
-    return MARKET_DEFINITIONS.map((market) => {
+    return definitions.map((market) => {
         const pools = poolMap.get(market.key) || market.buckets.map(() => 0);
         return {
             key: market.key,
@@ -90,6 +117,7 @@ function buildPublicMarkets() {
             buckets: market.buckets,
             data: market.trend,
             blurb: market.blurb,
+            unit: market.unit || 'points',
             pools,
             sentiment: sentimentForPools(pools),
         };
@@ -146,7 +174,7 @@ function upsertUserStake(user, predictions, homeYears = 0) {
     });
 
     const biggest = normalized.slice().sort((a, b) => b.stake - a.stake)[0];
-    const market = MARKET_DEFINITIONS.find((item) => item.key === biggest.marketKey);
+    const market = getMarketDefinitions().find((item) => item.key === biggest.marketKey);
     addActivity({
         type: 'stake-sync',
         text: `${shortName(user.displayName)} shifted ${biggest.stake} ✦ toward ${market ? market.title : biggest.marketKey}.`,
@@ -202,10 +230,12 @@ function broadcastSnapshot() {
 }
 
 module.exports = {
-    MARKET_DEFINITIONS,
+    DEFAULT_MARKET_DEFINITIONS,
     currentSnapshot,
     buildPublicMarkets,
     getActivityFeed,
+    getMarketDefinitions,
+    refreshMarketDefinitions,
     upsertUserStake,
     clearUserStake,
     recordSettlement,

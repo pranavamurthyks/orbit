@@ -6,7 +6,6 @@ const pages = {
 
 const canvas = document.getElementById('starCanvas');
 const ctx = canvas.getContext('2d');
-const spaceCursor = document.getElementById('spaceCursor');
 const profileBtn = document.getElementById('profileBtn');
 const profileMenu = document.getElementById('profileMenu');
 const profileStardust = document.getElementById('profileStardust');
@@ -53,7 +52,6 @@ let W = 0;
 let H = 0;
 let stars = [];
 let mouse = { x: -999, y: -999 };
-let cursorAngle = -20;
 let resolvedConstellations = [];
 
 const CONSTELLATIONS = [
@@ -375,25 +373,13 @@ window.addEventListener('popstate', () => {
 window.addEventListener('scroll', updateHostProgress, { passive: true });
 
 window.addEventListener('mousemove', event => {
-  const dx = event.clientX - mouse.x;
-  const dy = event.clientY - mouse.y;
   mouse.x = event.clientX;
   mouse.y = event.clientY;
-
-  if (spaceCursor) {
-    if (Math.abs(dx) + Math.abs(dy) > 0.4) {
-      cursorAngle = Math.atan2(dy, dx) * 180 / Math.PI + 90;
-    }
-
-    spaceCursor.style.opacity = '1';
-    spaceCursor.style.transform = `translate(${mouse.x - 23}px, ${mouse.y - 23}px) rotate(${cursorAngle}deg)`;
-  }
 });
 
 window.addEventListener('mouseleave', () => {
   mouse.x = -999;
   mouse.y = -999;
-  if (spaceCursor) spaceCursor.style.opacity = '0';
 });
 
 progressFields.forEach(field => {

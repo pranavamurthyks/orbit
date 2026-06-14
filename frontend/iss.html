@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>SkyFolk — ISS Tracker</title>
+<title>SkyFolk - ISS Tracker</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;0,6..72,600;1,6..72,400&family=Space+Mono:wght@400;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
 <style>
@@ -1221,27 +1221,27 @@
 
       <div class="readout-item">
         <div class="label">Latitude / Longitude</div>
-        <div class="value amber" id="issLatLon">—</div>
+        <div class="value amber" id="issLatLon">-</div>
       </div>
 
       <div class="readout-item">
         <div class="label">Altitude</div>
-        <div class="value" id="issAlt">—</div>
+        <div class="value" id="issAlt">-</div>
       </div>
 
       <div class="readout-item">
         <div class="label">Ground speed</div>
-        <div class="value teal" id="issSpeed">—</div>
+        <div class="value teal" id="issSpeed">-</div>
       </div>
 
       <div class="readout-item">
         <div class="label">Data source</div>
-        <div class="value" id="issSource" style="font-size:.85rem;">—</div>
+        <div class="value" id="issSource" style="font-size:.85rem;">-</div>
       </div>
 
       <div class="readout-item">
         <div class="label">Distance from you</div>
-        <div class="value" id="issDistance">—</div>
+        <div class="value" id="issDistance">-</div>
       </div>
 
       <div class="readout-note">
@@ -1276,8 +1276,8 @@
           <div class="pointer-center"><span id="pointerDirection">Awaiting<br>target</span></div>
         </div>
         <div class="pointer-readouts">
-          <div class="pointer-stat"><span>Target heading</span><strong id="pointerHeading">—</strong></div>
-          <div class="pointer-stat"><span>Approx. elevation</span><strong id="pointerElevation">—</strong></div>
+          <div class="pointer-stat"><span>Target heading</span><strong id="pointerHeading">-</strong></div>
+          <div class="pointer-stat"><span>Approx. elevation</span><strong id="pointerElevation">-</strong></div>
           <div class="pointer-stat"><span>Turn cue</span><strong id="pointerTurn">Share location first</strong></div>
           <button class="loc-btn pointer-btn" id="pointerBtn" type="button">Enable Sky Pointer</button>
         </div>
@@ -1290,7 +1290,7 @@
     <div class="section-head">
       <div class="eyebrow">While you're watching it move</div>
       <h2>What that tiny dot is actually doing</h2>
-      <p>The ISS isn't just fast — the speed and altitude it's traveling at have genuinely strange
+      <p>The ISS isn't just fast - the speed and altitude it's traveling at have genuinely strange
       consequences, including a real, measurable effect on time itself for the people inside it.</p>
     </div>
 
@@ -1300,7 +1300,7 @@
         <span class="fact-tag">Time dilation</span>
         <div class="fact-stat">~0.01 sec</div>
         <p>Over a six-month mission, an ISS astronaut's onboard clock ends up running about
-        0.01 seconds behind a clock on Earth — almost entirely due to the station's orbital speed
+        0.01 seconds behind a clock on Earth - almost entirely due to the station's orbital speed
         (special relativity), very slightly offset by the weaker gravity at orbital altitude
         (general relativity). It's tiny, but it's real, measurable time travel into the future.</p>
       </div>
@@ -1308,14 +1308,14 @@
       <div class="fact-card">
         <span class="fact-tag">Speed</span>
         <div class="fact-stat">7.66 km/s</div>
-        <p>That's roughly 27,600 km/h — fast enough to travel from London to New York in about
+        <p>That's roughly 27,600 km/h - fast enough to travel from London to New York in about
         7 minutes. At that speed, the dot on the globe above can visibly move between refreshes.</p>
       </div>
 
       <div class="fact-card">
         <span class="fact-tag">Orbit</span>
         <div class="fact-stat">~92.7 min</div>
-        <p>One full lap of Earth. That means the ISS completes about 15.5 orbits every single day —
+        <p>One full lap of Earth. That means the ISS completes about 15.5 orbits every single day -
         more than the number of days in two weeks, every 24 hours.</p>
       </div>
 
@@ -1323,7 +1323,7 @@
         <span class="fact-tag">Sunrises</span>
         <div class="fact-stat">~16 / day</div>
         <p>Because each orbit is so short, astronauts on board experience roughly 16 sunrises and
-        16 sunsets every day — a day-night cycle about 90 times faster than the one you're in
+        16 sunsets every day - a day-night cycle about 90 times faster than the one you're in
         right now.</p>
       </div>
 
@@ -1331,7 +1331,7 @@
         <span class="fact-tag">Visibility</span>
         <div class="fact-stat">Brighter than most stars</div>
         <p>When conditions are right, the ISS reflects enough sunlight to outshine almost every
-        star in the sky — visible to the naked eye as a fast-moving, steady point of light, no
+        star in the sky - visible to the naked eye as a fast-moving, steady point of light, no
         telescope required.</p>
       </div>
 
@@ -1340,7 +1340,7 @@
         <div class="fact-stat">~0.02 sec</div>
         <p>Cosmonaut Sergei Krikalev, who has spent more cumulative time in orbit than almost
         anyone, is estimated to have aged a few hundredths of a second less than someone who
-        stayed on Earth the whole time — the largest known human time-dilation effect from
+        stayed on Earth the whole time - the largest known human time-dilation effect from
         spaceflight to date.</p>
       </div>
 
@@ -1353,10 +1353,11 @@
 
 <!-- ============================================================
      THREE.JS SETUP
-     Loaded via CDN — r128 build + matching OrbitControls.
+     Loaded via CDN - r128 build + matching OrbitControls.
 ============================================================ -->
 <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/build/three.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+<script src="ui-effects.js"></script>
 
 <script>
 (() => {
@@ -1540,11 +1541,8 @@
    ====================================================================== */
 const canvas = document.getElementById('globeCanvas');
 const globeCard = canvas.parentElement;
-const spaceCursor = document.getElementById('spaceCursor');
 const profileBtn = document.getElementById('profileBtn');
 const profileMenu = document.getElementById('profileMenu');
-let rocketMouse = { x: -999, y: -999 };
-let rocketCursorAngle = -20;
 
 const scene = new THREE.Scene();
 
@@ -1560,7 +1558,7 @@ const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true 
 renderer.setSize(globeCard.clientWidth, globeCard.clientHeight);
 renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
 
-// Resize handling — keep the canvas matched to its container
+// Resize handling - keep the canvas matched to its container
 window.addEventListener('resize', () => {
   const w = globeCard.clientWidth;
   const h = globeCard.clientHeight;
@@ -1569,30 +1567,8 @@ window.addEventListener('resize', () => {
   renderer.setSize(w, h);
 });
 
-window.addEventListener('mousemove', event => {
-  const dx = event.clientX - rocketMouse.x;
-  const dy = event.clientY - rocketMouse.y;
-  rocketMouse.x = event.clientX;
-  rocketMouse.y = event.clientY;
-
-  if (spaceCursor) {
-    if (Math.abs(dx) + Math.abs(dy) > 0.4) {
-      rocketCursorAngle = Math.atan2(dy, dx) * 180 / Math.PI + 90;
-    }
-
-    spaceCursor.style.opacity = '1';
-    spaceCursor.style.transform = `translate(${rocketMouse.x - 23}px, ${rocketMouse.y - 23}px) rotate(${rocketCursorAngle}deg)`;
-  }
-});
-
-window.addEventListener('mouseleave', () => {
-  rocketMouse.x = -999;
-  rocketMouse.y = -999;
-  if (spaceCursor) spaceCursor.style.opacity = '0';
-});
-
 /* ======================================================================
-   2. CONTROLS — drag to orbit, scroll to zoom
+   2. CONTROLS - drag to orbit, scroll to zoom
    ====================================================================== */
 const controls = new THREE.OrbitControls(camera, renderer.domElement);
 controls.enableDamping = true;
@@ -1602,25 +1578,25 @@ controls.maxDistance = 30;
 controls.rotateSpeed = 0.4;
 
 /* ======================================================================
-   3. EARTH SPHERE — day/night shader + cloud layer
+   3. EARTH SPHERE - day/night shader + cloud layer
    ======================================================================
    Rather than a single flat texture, the Earth here is built from three
    layers so it reads as an actual planet rather than a painted ball:
 
      a) A custom ShaderMaterial on the main sphere that blends a
         daytime texture and a night-lights texture based on where the
-        sun is — the side facing the light shows continents/oceans
+        sun is - the side facing the light shows continents/oceans
         (with a specular highlight on water), the side facing away
         shows city lights, and the terminator (day/night boundary)
         blends smoothly between the two.
 
      b) A second, very slightly larger sphere with a semi-transparent
         cloud texture, rotating independently and a little faster than
-        the surface — giving a sense of depth and movement.
+        the surface - giving a sense of depth and movement.
 
      c) The existing thin atmosphere glow shell (kept from before).
 
-   EARTH_RADIUS is our "scene unit" for the planet — every other
+   EARTH_RADIUS is our "scene unit" for the planet - every other
    distance (ISS altitude, marker sizes) is derived from this so the
    whole scene scales consistently.
    ====================================================================== */
@@ -1642,7 +1618,7 @@ const earthMaterial = new THREE.ShaderMaterial({
     dayTexture:      { value: dayTexture },
     nightTexture:    { value: nightTexture },
     specularTexture: { value: specularTexture },
-    // Sun direction in camera (view) space — updated every frame in animate()
+    // Sun direction in camera (view) space - updated every frame in animate()
     sunDirection:    { value: new THREE.Vector3(1, 0, 0) }
   },
   vertexShader: `
@@ -1651,7 +1627,7 @@ const earthMaterial = new THREE.ShaderMaterial({
     void main() {
       vUv = uv;
       // normalMatrix maps object-space normals into view space, taking
-      // the object's current rotation into account — so this stays
+      // the object's current rotation into account - so this stays
       // correct as the Earth spins.
       vNormal = normalize(normalMatrix * normal);
       gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
@@ -1690,7 +1666,7 @@ const earthMaterial = new THREE.ShaderMaterial({
 const earthGeometry = new THREE.SphereGeometry(EARTH_RADIUS, 64, 64);
 const earth = new THREE.Mesh(earthGeometry, earthMaterial);
 
-// earthGroup rotates as a unit — the surface mesh AND any lat/lon based
+// earthGroup rotates as a unit - the surface mesh AND any lat/lon based
 // markers (ISS, user location, ground track) are children of this group,
 // so they stay correctly aligned with the texture as the planet spins.
 // (Clouds rotate separately, at a slightly different speed, for parallax.)
@@ -1698,7 +1674,7 @@ const earthGroup = new THREE.Group();
 earthGroup.add(earth);
 scene.add(earthGroup);
 
-// Cloud layer — a thin, semi-transparent shell just above the surface
+// Cloud layer - a thin, semi-transparent shell just above the surface
 const cloudsGeometry = new THREE.SphereGeometry(EARTH_RADIUS * 1.012, 64, 64);
 const cloudsMaterial = new THREE.MeshStandardMaterial({
   map: cloudsTexture,
@@ -1710,7 +1686,7 @@ const cloudsMaterial = new THREE.MeshStandardMaterial({
 const clouds = new THREE.Mesh(cloudsGeometry, cloudsMaterial);
 scene.add(clouds);
 
-// Thin atmosphere glow — a slightly larger, transparent backside sphere
+// Thin atmosphere glow - a slightly larger, transparent backside sphere
 const atmosphereGeometry = new THREE.SphereGeometry(EARTH_RADIUS * 1.04, 64, 64);
 const atmosphereMaterial = new THREE.MeshBasicMaterial({
   color: 0x5fd4c1,
@@ -1722,7 +1698,7 @@ scene.add(new THREE.Mesh(atmosphereGeometry, atmosphereMaterial));
 
 /* ======================================================================
    4. LIGHTING
-   The directional light doubles as "the sun" for the shader above —
+   The directional light doubles as "the sun" for the shader above -
    its world-space position is converted to a view-space direction each
    frame and fed into earthMaterial's sunDirection uniform.
    ====================================================================== */
@@ -1754,7 +1730,7 @@ const starMaterial = new THREE.PointsMaterial({ color: 0xffffff, size: 0.15, tra
 scene.add(new THREE.Points(starGeometry, starMaterial));
 
 /* ======================================================================
-   6. COORDINATE TRANSFORMATION — lat/lon -> 3D position
+   6. COORDINATE TRANSFORMATION - lat/lon -> 3D position
    ======================================================================
    This is the core piece of math that places the ISS marker correctly
    on the globe.
@@ -1784,7 +1760,7 @@ scene.add(new THREE.Points(starGeometry, starMaterial));
 
    'radius' lets us place the marker either ON the surface (radius =
    EARTH_RADIUS) or ABOVE it at some altitude (radius = EARTH_RADIUS +
-   scaled altitude) — which is how we draw the ISS "floating" above
+   scaled altitude) - which is how we draw the ISS "floating" above
    the globe rather than stuck to its surface.
    ====================================================================== */
 function latLonToVector3(latDeg, lonDeg, radius) {
@@ -1821,7 +1797,7 @@ const wingRight = new THREE.Mesh(wingGeo, wingMat);
 wingRight.position.x = 0.28;
 issGroup.add(wingLeft, wingRight);
 
-// Glow sprite — a soft circular gradient that always faces the camera
+// Glow sprite - a soft circular gradient that always faces the camera
 const glowCanvas = document.createElement('canvas');
 glowCanvas.width = 64; glowCanvas.height = 64;
 const gctx = glowCanvas.getContext('2d');
@@ -1837,7 +1813,7 @@ issGroup.add(glowSprite);
 
 earthGroup.add(issGroup); // child of earthGroup so it stays aligned with the rotating surface
 
-// Faint orbit trail — a ring showing the ISS's recent ground track
+// Faint orbit trail - a ring showing the ISS's recent ground track
 const MAX_TRAIL_POINTS = 60;
 let trailPoints = [];
 const trailGeometry = new THREE.BufferGeometry();
@@ -1845,7 +1821,7 @@ const trailMaterial = new THREE.LineBasicMaterial({ color: 0x5fd4c1, transparent
 const trailLine = new THREE.Line(trailGeometry, trailMaterial);
 earthGroup.add(trailLine);
 
-// User location marker — a small amber dot placed on the surface once
+// User location marker - a small amber dot placed on the surface once
 // the visitor shares their location. Hidden until then.
 const userMarkerGeo = new THREE.SphereGeometry(0.06, 16, 16);
 const userMarkerMat = new THREE.MeshBasicMaterial({ color: 0xe8a33d });
@@ -1855,7 +1831,7 @@ earthGroup.add(userMarker);
 
 /* ======================================================================
    8. ISS ORBIT RADIUS
-   The ISS flies at ~408 km above Earth's ~6371 km radius — in real
+   The ISS flies at ~408 km above Earth's ~6371 km radius - in real
    proportion that's barely off the surface and would be invisible at
    this scale. We exaggerate the altitude by a fixed multiplier purely
    for visual clarity, while keeping the lat/lon placement accurate.
@@ -1868,7 +1844,7 @@ const issOrbitRadius = EARTH_RADIUS +
   (ISS_ALTITUDE_KM / EARTH_RADIUS_KM) * EARTH_RADIUS * ALTITUDE_EXAGGERATION;
 
 /* ======================================================================
-   9. LIVE DATA — fetch real ISS position, with a fallback model
+   9. LIVE DATA - fetch real ISS position, with a fallback model
    ======================================================================
    Primary source: wheretheiss.at (free, CORS-enabled JSON API for
    satellite 25544 = ISS).
@@ -1916,16 +1892,16 @@ async function fetchISSPosition() {
 }
 
 /* ======================================================================
-   9.5 "CAN YOU SEE IT TONIGHT?" — sun position, distance, visibility
+   9.5 "CAN YOU SEE IT TONIGHT?" - sun position, distance, visibility
    ======================================================================
    Spotting the ISS with the naked eye depends on two real conditions:
 
-     1. YOUR sky must be dark (the sun must be below your horizon —
+     1. YOUR sky must be dark (the sun must be below your horizon -
         ideally in civil twilight or later, sun altitude < -6 degrees).
      2. The ISS ITSELF must still be in sunlight at its altitude, so it
         reflects light down toward you (it doesn't emit its own light).
         We approximate this by checking the sun's altitude at the ISS's
-        ground position — because the ISS sits 400km up, it can remain
+        ground position - because the ISS sits 400km up, it can remain
         sunlit even when the ground below it is in darkness, so we use
         a more lenient threshold for the ISS than for the observer.
 
@@ -2001,8 +1977,8 @@ function updateSkyPointer(issLat, issLon) {
 
   if (userLat === null || userLon === null) {
     direction.innerHTML = 'Awaiting<br>target';
-    heading.textContent = '—';
-    elevation.textContent = '—';
+    heading.textContent = '-';
+    elevation.textContent = '-';
     turn.textContent = 'Share location first';
     arrow.style.transform = 'translate(-50%,-100%) rotate(0deg)';
     status.textContent = 'Share your location, then enable motion access on a phone to turn this into a live heading guide for the ISS.';
@@ -2058,28 +2034,28 @@ function updateVisibilityPanel(issLat, issLon) {
     badge.textContent = 'Worth a look';
     badge.className = 'visibility-badge good';
     text.innerHTML = `Your sky is dark (sun is ${Math.abs(yourSunAlt).toFixed(0)}° below your horizon) ` +
-      `and the ISS — about <strong>${distanceKm.toLocaleString()} km</strong> from you — is still catching sunlight at its altitude. ` +
+      `and the ISS - about <strong>${distanceKm.toLocaleString()} km</strong> from you - is still catching sunlight at its altitude. ` +
       `Step outside and scan the sky; if it's currently above your horizon, it'll look like a bright, steadily-moving star.`;
   } else if (!skyIsDark) {
     badge.textContent = 'Too bright';
     badge.className = 'visibility-badge bad';
     text.innerHTML = `Your sky is too bright right now (the sun is ${yourSunAlt >= 0 ? 'above' : 'only ' + Math.abs(yourSunAlt).toFixed(0) + '° below'} your horizon) ` +
-      `for the ISS to stand out — even though it's <strong>${distanceKm.toLocaleString()} km</strong> away. Try again after dark.`;
+      `for the ISS to stand out - even though it's <strong>${distanceKm.toLocaleString()} km</strong> away. Try again after dark.`;
   } else if (!issIsLit) {
     badge.textContent = 'In Earth\'s shadow';
     badge.className = 'visibility-badge bad';
     text.innerHTML = `Your sky is dark, but the ISS itself is currently passing through Earth's shadow at its location, so it isn't reflecting sunlight. ` +
-      `It's about <strong>${distanceKm.toLocaleString()} km</strong> from you right now — check back in a bit.`;
+      `It's about <strong>${distanceKm.toLocaleString()} km</strong> from you right now - check back in a bit.`;
   } else {
     badge.textContent = 'Out of range';
     badge.className = 'visibility-badge bad';
-    text.innerHTML = `The ISS is about <strong>${distanceKm.toLocaleString()} km</strong> from you — too far around the curve of the Earth to be above your horizon right now, even though your sky is dark.`;
+    text.innerHTML = `The ISS is about <strong>${distanceKm.toLocaleString()} km</strong> from you - too far around the curve of the Earth to be above your horizon right now, even though your sky is dark.`;
   }
 }
 
 
 /* ======================================================================
-   10. UPDATE LOOP — poll the live position every few seconds
+   10. UPDATE LOOP - poll the live position every few seconds
    ====================================================================== */
 function pad(n) { return n.toString().padStart(2, '0'); }
 
@@ -2151,7 +2127,7 @@ function animate() {
 }
 
 /* ======================================================================
-   13. GEOLOCATION — "Check if it's visible from where I am"
+   13. GEOLOCATION - "Check if it's visible from where I am"
    ====================================================================== */
 document.getElementById('locBtn').addEventListener('click', () => {
   const note = document.getElementById('locNote');

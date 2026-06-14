@@ -1,5 +1,5 @@
 /* =============================================================
-   vr_components.js  —  A-Frame custom components
+   vr_components.js  -  A-Frame custom components
    Zero external texture dependencies: all planet surfaces are
    generated procedurally on a Canvas so the scenes work fully
    offline and never 404.
@@ -222,7 +222,7 @@ document.addEventListener('DOMContentLoaded', function () {
   // Mark A-Frame assets as already loaded so the scene never blocks
   const assetsEl = document.querySelector('a-assets');
   if (assetsEl) {
-    // Remove img children — we don't need them anymore
+    // Remove img children - we don't need them anymore
     assetsEl.querySelectorAll('img').forEach(function(img){ img.remove(); });
   }
 });

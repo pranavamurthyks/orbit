@@ -1,10 +1,8 @@
 // ── Starfield ─────────────────────────────────────────────────────────────
 const canvas = document.getElementById('starCanvas');
 const ctx    = canvas.getContext('2d');
-const spaceCursor = document.getElementById('spaceCursor');
 let W, H, stars = [], constellations = [];
 let mouse = { x: -999, y: -999 };
-let cursorAngle = -20;
 const HOVER_RADIUS = 104;
 const api = window.SkyFolkApi;
 
@@ -177,25 +175,13 @@ function drawStars() {
 }
 
 window.addEventListener('mousemove', e => {
-  const dx = e.clientX - mouse.x;
-  const dy = e.clientY - mouse.y;
   mouse.x = e.clientX;
   mouse.y = e.clientY;
-
-  if (spaceCursor) {
-    if (Math.abs(dx) + Math.abs(dy) > 0.4) {
-      cursorAngle = Math.atan2(dy, dx) * 180 / Math.PI + 90;
-    }
-
-    spaceCursor.style.opacity = '1';
-    spaceCursor.style.transform = `translate(${mouse.x - 23}px, ${mouse.y - 23}px) rotate(${cursorAngle}deg)`;
-  }
 });
 
 window.addEventListener('mouseleave', () => {
   mouse.x = -999;
   mouse.y = -999;
-  if (spaceCursor) spaceCursor.style.opacity = '0';
 });
 
 window.addEventListener('resize', resizeCanvas);

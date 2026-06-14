@@ -4,8 +4,9 @@ const optionalAuth = require('../middleware/auth').optionalAuth;
 const MarketTrip = require('../models/MarketTrip');
 const { addLedgerEntry } = require('../services/stardustService');
 const {
-    MARKET_DEFINITIONS,
     currentSnapshot,
+    getMarketDefinitions,
+    refreshMarketDefinitions,
     upsertUserStake,
     clearUserStake,
     recordSettlement,
@@ -16,6 +17,7 @@ const {
 const router = express.Router();
 
 router.get('/', optionalAuth, async (req, res) => {
+    await refreshMarketDefinitions();
     const trips = req.user
         ? await MarketTrip.find({ userId: req.user._id }).sort({ createdAt: -1 }).limit(5).lean()
         : [];
@@ -55,6 +57,7 @@ router.get('/stream', (req, res) => {
 });
 
 router.post('/sync', requireAuth, async (req, res) => {
+    await refreshMarketDefinitions();
     const { predictions, homeYears } = req.body;
     upsertUserStake(req.user, predictions, homeYears);
     res.json(currentSnapshot());
@@ -66,9 +69,11 @@ router.post('/clear', requireAuth, async (req, res) => {
 });
 
 router.post('/trip', requireAuth, async (req, res) => {
+    await refreshMarketDefinitions();
     const { mode, shipDays, homeYears, dilationFactor, predictions } = req.body;
     const normalizedPredictions = Array.isArray(predictions) ? predictions : [];
     const totalStake = normalizedPredictions.reduce((sum, item) => sum + Number(item.stake || 0), 0);
+    const marketDefinitions = getMarketDefinitions();
 
     if (totalStake < 1) {
         return res.status(400).json({ message: 'At least one prediction stake is required' });
@@ -81,7 +86,7 @@ router.post('/trip', requireAuth, async (req, res) => {
     await addLedgerEntry(req.user, -totalStake, 'Started a time-dilation trading trip', 'market-trip', null);
 
     const resolvedPredictions = normalizedPredictions.map((item, index) => {
-        const market = MARKET_DEFINITIONS.find(entry => entry.key === item.marketKey) || MARKET_DEFINITIONS[index % MARKET_DEFINITIONS.length];
+        const market = marketDefinitions.find(entry => entry.key === item.marketKey) || marketDefinitions[index % marketDefinitions.length];
         const shared = marketLookup.get(market.key);
         const winningPick = Math.abs(Math.round(Number(homeYears || 0) * 10) + index) % market.buckets.length;
         const won = Number(item.pick) === winningPick;

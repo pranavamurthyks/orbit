@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>SkyFolk — Time Dilation</title>
+<title>SkyFolk - Time Dilation</title>
 <link href="https://fonts.googleapis.com/css2?family=Newsreader:ital,wght@0,400;0,600;1,400&family=Space+Mono:wght@400;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 <style>
@@ -316,7 +316,7 @@ body *{cursor:none!important}
     <div class="hero-tag">▸ Space forecasting game</div>
     <h1>Travel fast. Come back <em>decades</em> later.<br>Predict what changed.</h1>
     <p>
-      Pick a trip — the faster you fly, or the closer you orbit a black hole, the more time passes <strong>back home</strong> while you barely age.
+      Pick a trip - the faster you fly, or the closer you orbit a black hole, the more time passes <strong>back home</strong> while you barely age.
       Before you leave, bet <strong>Stardust</strong> on how space trends will look when you return.
       The better you read the patterns, the more you earn.
     </p>
@@ -324,7 +324,7 @@ body *{cursor:none!important}
 
   <!-- Trip Selector -->
   <section class="sec">
-    <div class="sec-lbl">Step 1 — Plan your trip</div>
+    <div class="sec-lbl">Step 1 - Plan your trip</div>
     <div class="card">
       <div class="tabs" role="tablist">
         <button class="tab on" id="tab-s" role="tab" aria-selected="true" onclick="switchMode('speed')">⚡ Speed trip</button>
@@ -376,8 +376,8 @@ body *{cursor:none!important}
 
   <!-- Markets -->
   <section class="sec">
-    <div class="sec-lbl">Step 2 — Place your predictions</div>
-    <p style="font-size:.78rem;opacity:.45;margin-bottom:14px;font-family:var(--mono)"><span style="color:var(--teal)">◉</span> Live pool — odds shift as other pilots bet</p>
+    <div class="sec-lbl">Step 2 - Place your predictions</div>
+    <p style="font-size:.78rem;opacity:.45;margin-bottom:14px;font-family:var(--mono)"><span style="color:var(--teal)">◉</span> Live pool - odds shift as other pilots bet</p>
     <div class="mgrid" id="mgrid"></div>
     <p class="hint">If everyone picks the same option, the payout shrinks. Contrarian bets pay more when correct.</p>
   </section>
@@ -391,7 +391,7 @@ body *{cursor:none!important}
 
   <!-- Depart -->
   <section class="sec">
-    <div class="sec-lbl">Step 3 — Launch</div>
+    <div class="sec-lbl">Step 3 - Launch</div>
     <button class="go" id="go-btn" onclick="startTrip()" disabled>◈ ENGAGE DRIVE</button>
     <p class="hint" id="go-hint">Pick a prediction for each trend first.</p>
   </section>
@@ -422,13 +422,12 @@ body *{cursor:none!important}
 </div>
 
 <script src="api.js"></script>
+<script src="ui-effects.js"></script>
 <script>
 /* ── Orbit starfield ── */
 (function(){
   const cv=document.getElementById('starfield'),cx=cv.getContext('2d');
-  const spaceCursor=document.getElementById('spaceCursor');
   let W=0,H=0,stars=[],mouse={x:-999,y:-999},resolved=[],scrollProgress=0,travel=0;
-  let cursorAngle=-20;
   let predictionStage=0,launchStage=0;
   const hoverRadius=104;
   const reduceMotion=matchMedia('(prefers-reduced-motion:reduce)').matches;
@@ -634,17 +633,10 @@ body *{cursor:none!important}
     requestAnimationFrame(draw);
   }
   addEventListener('mousemove',e=>{
-    const dx=e.clientX-mouse.x,dy=e.clientY-mouse.y;
     mouse.x=e.clientX;mouse.y=e.clientY;
-    if(spaceCursor){
-      if(Math.abs(dx)+Math.abs(dy)>.4)cursorAngle=Math.atan2(dy,dx)*180/Math.PI+90;
-      spaceCursor.style.opacity='1';
-      spaceCursor.style.transform=`translate(${mouse.x-23}px, ${mouse.y-23}px) rotate(${cursorAngle}deg)`;
-    }
   });
   addEventListener('mouseleave',()=>{
     mouse.x=-999;mouse.y=-999;
-    if(spaceCursor)spaceCursor.style.opacity='0';
   });
   addEventListener('scroll',updateScrollMood,{passive:true});
   resize();addEventListener('resize',resize);draw();
@@ -770,7 +762,7 @@ function doGrav(){
   syncMarketNotes();
 }
 
-/* ── Trend data (2010–2025 realistic synthetic series) ── */
+/* ── Trend data (2010-2025 realistic synthetic series) ── */
 const TRENDS=[
   {
     id:'sats',
@@ -815,8 +807,8 @@ let syncTimer=null;
 
 function mergeStaticModel(market,index){
   const fallback=TRENDS[index]||TRENDS[0];
-  return {
-    unit:'index',
+    return {
+      unit:'index',
     model:fallback?.model||'lin',
     growthRate:fallback?.growthRate||.12,
     period:fallback?.period||11,
@@ -840,6 +832,7 @@ function applyMarketSnapshot(snapshot){
         title:market.title,
         blurb:market.blurb,
         data:market.data,
+        unit:market.unit || existing.unit || fallback?.unit || 'index',
         pools:market.pools,
         sentiment:Number(market.sentiment||0),
       },index),
@@ -1312,13 +1305,9 @@ async function resolveTrip(){
     const last=o.m.data[o.m.data.length-1];
     const pct=((o.val-last)/last*100).toFixed(0);
     const sign=pct>0?'+':'';
-    let txt='';
-    if(o.m.id==='satellites')
-      txt=o.val>last?`Orbital traffic hit ~${Math.round(o.val).toLocaleString()} satellites — congestion is now a real problem.`:`Growth stalled at ~${Math.round(o.val).toLocaleString()} satellites in orbit.`;
-    else if(o.m.id==='solar')
-      txt=Math.round(o.val)>120?`Solar maximum hit hard — peak sunspot count near ${Math.round(o.val)}, causing radio disruptions.`:Math.round(o.val)<30?`Solar minimum. The sun is quiet — great for deep-space observation.`:`Moderate solar activity (${Math.round(o.val)} sunspots). Cycle on track.`;
-    else
-      txt=`Exoplanet catalog reached ~${Math.round(o.val).toLocaleString()} confirmed worlds (${sign}${pct}% from when you left).`;
+    const unit=o.m.unit||'units';
+    const movement=pct==='0' ? 'held close to where it started' : `${sign}${pct}% from when you left`;
+    const txt=`${o.m.title} landed near ${Math.round(o.val).toLocaleString()} ${unit} and ${movement}.`;
     return{txt,cls:o.won?'w':'l'};
   });
 
@@ -1327,7 +1316,7 @@ async function resolveTrip(){
 
   document.getElementById('res-inner').innerHTML=`
     <div>
-      <div class="res-sub">You're back — ${S.shipDays} ship day${S.shipDays>1?'s':''} felt like ${nice(hy*365.25*86400)} at home</div>
+      <div class="res-sub">You're back - ${S.shipDays} ship day${S.shipDays>1?'s':''} felt like ${nice(hy*365.25*86400)} at home</div>
       <div class="res-title">The universe moved on without you.</div>
     </div>
     <div class="dbox">
@@ -1341,7 +1330,7 @@ async function resolveTrip(){
           <div class="och"><canvas id="rc-${i}"></canvas></div>
           <div class="or ${o.won?'w':'l'}">
             ${o.won
-              ?`✓ You called it — ${['goes down','on track','goes up'][o.m.pick]}. Payout: +${o.payout} ✦ (×${(o.payout/Math.max(1,o.m.stake)).toFixed(2)})`
+              ?`✓ You called it - ${['goes down','on track','goes up'][o.m.pick]}. Payout: +${o.payout} ✦ (×${(o.payout/Math.max(1,o.m.stake)).toFixed(2)})`
               :`✗ You called ${['down','on track','up'][o.m.pick]}, it went ${['down','on track','up'][o.bucket]}. Stake lost.`
             }
           </div>

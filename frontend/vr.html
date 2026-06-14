@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
-  <title>SkyFolk — Immersive Missions</title>
+  <title>SkyFolk - Immersive Missions</title>
 
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -116,7 +116,7 @@
     vr-mode-ui="enabled: true"
     renderer="colorManagement: true; physicallyCorrectLights: true">
 
-    <!-- No external texture assets — all planet surfaces are generated
+    <!-- No external texture assets - all planet surfaces are generated
          procedurally by vr_components.js (see makeMoonTexture etc.)
          This means zero network dependencies and zero 404s. -->
     <a-assets timeout="1000"></a-assets>
@@ -148,7 +148,7 @@
     <a-entity laser-controls="hand: right" raycaster="objects: .clickable"></a-entity>
 
     <!-- =====================================================
-         SCENE 1 — SATURN'S RINGS (from within the ring plane)
+         SCENE 1 - SATURN'S RINGS (from within the ring plane)
          Proper a-ring geometry + layered rings + Saturn body
          ===================================================== -->
     <a-entity id="scene-saturn" class="scene-group" visible="false">
@@ -162,7 +162,7 @@
         <a-sphere pro-tex="name: saturn" radius="35" segments-height="64" segments-width="64"
                   animation="property: rotation; to: 0 360 0; dur: 40000; loop: true; easing: linear">
         </a-sphere>
-        <!-- Ring system as stacked a-ring primitives — much more solid/visible than particles -->
+        <!-- Ring system as stacked a-ring primitives - much more solid/visible than particles -->
         <a-ring radius-inner="38" radius-outer="44" rotation="-90 0 0"
                 pro-tex="name: saturnRing"
                 material="side: double; transparent: true; opacity: 0.9; shader: flat"></a-ring>
@@ -176,7 +176,7 @@
                 material="color: #9C8B6E; side: double; transparent: true; opacity: 0.25; shader: flat"></a-ring>
       </a-entity>
 
-      <!-- Ice chunks floating nearby — you're inside the ring plane -->
+      <!-- Ice chunks floating nearby - you're inside the ring plane -->
       <a-entity position="0 0 0"
                 animation="property: rotation; to: 0 360 0; dur: 120000; loop: true; easing: linear"
                 particle-system="
@@ -202,7 +202,7 @@
     </a-entity>
 
     <!-- =====================================================
-         SCENE 2 — APOLLO 11: TRANQUILITY BASE
+         SCENE 2 - APOLLO 11: TRANQUILITY BASE
          ===================================================== -->
     <a-entity id="scene-moon" class="scene-group" visible="false">
       <a-sky color="#000005"></a-sky>
@@ -250,7 +250,7 @@
     </a-entity>
 
     <!-- =====================================================
-         SCENE 3 — BLACK HOLE (gravitational lensing effect)
+         SCENE 3 - BLACK HOLE (gravitational lensing effect)
          Procedural rings + accretion disk + lensing distortion
          ===================================================== -->
     <a-entity id="scene-blackhole" class="scene-group" visible="false">
@@ -270,17 +270,17 @@
         blending: additive">
       </a-entity>
 
-      <!-- Event horizon — pure black sphere -->
+      <!-- Event horizon - pure black sphere -->
       <a-sphere position="0 1.6 -18" radius="3.5" color="#000000"
                 material="shader: flat; color: #000000">
       </a-sphere>
 
-      <!-- Photon sphere — faint blue-white ring of bent light -->
+      <!-- Photon sphere - faint blue-white ring of bent light -->
       <a-ring position="0 1.6 -18" radius-inner="3.6" radius-outer="4.0" rotation="70 0 0"
               material="color: #AADDFF; shader: flat; transparent: true; opacity: 0.6; side: double">
       </a-ring>
 
-      <!-- Accretion disk — layered glowing rings, tilted ~15° -->
+      <!-- Accretion disk - layered glowing rings, tilted ~15° -->
       <a-ring position="0 1.6 -18" radius-inner="4.2" radius-outer="6.5" rotation="80 0 20"
               material="color: #FF6600; emissive: #FF4400; emissiveIntensity: 1; shader: flat; transparent: true; opacity: 0.95; side: double">
       </a-ring>
@@ -312,7 +312,7 @@
     </a-entity>
 
     <!-- =====================================================
-         SCENE 4 — PULSAR (rotating neutron star)
+         SCENE 4 - PULSAR (rotating neutron star)
          Sweeping lighthouse beams + glowing compact star
          ===================================================== -->
     <a-entity id="scene-pulsar" class="scene-group" visible="false">
@@ -332,14 +332,14 @@
         blending: additive">
       </a-entity>
 
-      <!-- Pulsar body — compact, brilliant -->
+      <!-- Pulsar body - compact, brilliant -->
       <a-sphere position="0 1.6 -12" radius="0.8"
                 material="color: #DDEEFF; emissive: #AACCFF; emissiveIntensity: 3; shader: flat">
       </a-sphere>
       <!-- Hot spot glow -->
       <a-light type="point" color="#AACCFF" intensity="3" position="0 1.6 -12" distance="60"></a-light>
 
-      <!-- Rotating beam entity — spins the beams around -->
+      <!-- Rotating beam entity - spins the beams around -->
       <a-entity position="0 1.6 -12"
                 animation="property: rotation; to: 0 360 0; dur: 1800; loop: true; easing: linear">
         <!-- Beam 1 -->
@@ -359,7 +359,7 @@
         </a-cone>
       </a-entity>
 
-      <!-- Equatorial glow disk — magnetosphere -->
+      <!-- Equatorial glow disk - magnetosphere -->
       <a-ring position="0 1.6 -12" radius-inner="1.0" radius-outer="3.5" rotation="90 0 0"
               material="color: #3366FF; emissive: #2244CC; emissiveIntensity: 1; shader: flat; transparent: true; opacity: 0.4; side: double">
       </a-ring>
@@ -375,7 +375,7 @@
     </a-entity>
 
     <!-- =====================================================
-         SCENE 5 — EARTH ORBIT / ISS OVERLOOK
+         SCENE 5 - EARTH ORBIT / ISS OVERLOOK
          ===================================================== -->
     <a-entity id="scene-earthiss" class="scene-group" visible="false">
       <a-sky color="#01030A"></a-sky>
@@ -406,7 +406,7 @@
     </a-entity>
 
     <!-- =====================================================
-         SCENE 6 — THE SOLAR SYSTEM
+         SCENE 6 - THE SOLAR SYSTEM
          ===================================================== -->
     <a-entity id="scene-solarsystem" class="scene-group" visible="false" position="0 0 -45">
       <a-sky color="#000005"></a-sky>
@@ -519,7 +519,7 @@
     </a-entity>
 
     <!-- =====================================================
-         SCENE 7 — SUPERNOVA TIMELINE
+         SCENE 7 - SUPERNOVA TIMELINE
          ===================================================== -->
     <a-entity id="scene-supernova" class="scene-group" visible="false">
       <a-sky color="#02030A"></a-sky>
@@ -553,7 +553,7 @@
     </a-entity>
 
     <!-- =====================================================
-         SCENE 8 — SOLAR FLARE / CME CORRIDOR
+         SCENE 8 - SOLAR FLARE / CME CORRIDOR
          ===================================================== -->
     <a-entity id="scene-cme" class="scene-group" visible="false">
       <a-sky color="#05060D"></a-sky>
@@ -590,6 +590,7 @@
   </a-scene>
 
   <script src="api.js"></script>
+  <script src="ui-effects.js"></script>
   <script src="vr.js"></script>
   <script src="session.js"></script>
 

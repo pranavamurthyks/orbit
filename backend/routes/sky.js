@@ -1,82 +1,47 @@
 const express = require('express');
-const axios = require('axios');
+const Session = require('../models/Session');
+const { getSkyOverview } = require('../services/skyService');
 
 const router = express.Router();
 
-function moonPhaseLabel(date = new Date()) {
-    const synodicMonth = 29.53058867;
-    const knownNewMoon = new Date('2024-01-11T11:57:00Z');
-    const days = (date - knownNewMoon) / 86400000;
-    const phase = ((days % synodicMonth) + synodicMonth) % synodicMonth;
-
-    if (phase < 1.8) return 'New Moon';
-    if (phase < 7.4) return 'Waxing Crescent';
-    if (phase < 9.2) return 'First Quarter';
-    if (phase < 14.8) return 'Waxing Gibbous';
-    if (phase < 16.6) return 'Full Moon';
-    if (phase < 22.1) return 'Waning Gibbous';
-    if (phase < 23.9) return 'Last Quarter';
-    return 'Waning Crescent';
-}
-
-function skyVisibilityLabel(hour) {
-    if (hour >= 5 && hour < 7) return 'Pre-dawn planets and ISS passes are the best targets right now.';
-    if (hour >= 18 && hour < 21) return 'Early evening skywatching window is open for bright planets and the ISS.';
-    if (hour >= 21 || hour < 2) return 'Dark-sky observing conditions are active for deep sky objects.';
-    return 'Daylight mode. Use this time to plan tonight\'s session and track solar activity.';
+function distanceKm(lat1, lng1, lat2, lng2) {
+    const DEG = Math.PI / 180;
+    const R = 6371;
+    const dLat = (lat2 - lat1) * DEG;
+    const dLng = (lng2 - lng1) * DEG;
+    const a = Math.sin(dLat / 2) ** 2 +
+        Math.cos(lat1 * DEG) * Math.cos(lat2 * DEG) * Math.sin(dLng / 2) ** 2;
+    return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
 }
 
 router.get('/overview', async (req, res) => {
     const lat = Number(req.query.lat || 12.9716);
     const lng = Number(req.query.lng || 77.5946);
-    const now = new Date();
+    const screenTimeMinutes = Number(req.query.screenTimeMinutes || 180);
 
-    let iss = null;
     try {
-        const response = await axios.get('http://api.open-notify.org/iss-now.json');
-        iss = response.data;
-    } catch {
-        iss = {
-            message: 'fallback',
-            timestamp: Math.floor(Date.now() / 1000),
-            iss_position: { latitude: '0.0000', longitude: '0.0000' },
-        };
+        const overview = await getSkyOverview(lat, lng, screenTimeMinutes);
+        const sessions = await Session.find({
+            status: 'scheduled',
+            'location.lat': { $ne: null },
+            'location.lng': { $ne: null },
+        }).lean();
+
+        const watchPartyCount = sessions.reduce((sum, session) => {
+            if (typeof session.location?.lat !== 'number' || typeof session.location?.lng !== 'number') {
+                return sum;
+            }
+            if (distanceKm(lat, lng, session.location.lat, session.location.lng) > 250) {
+                return sum;
+            }
+            return sum + (Array.isArray(session.participants) ? session.participants.length : 0);
+        }, 0);
+
+        overview.iss.watchPartyCount = watchPartyCount;
+        res.json(overview);
+    } catch (error) {
+        res.status(502).json({ message: error.message || 'Unable to load live sky data' });
     }
-
-    const nextPassMinutes = 18 + Math.round(Math.abs(lat + lng) % 27);
-    const watchPartyCount = 120 + Math.round(Math.abs(lat * 5 + lng) % 180);
-    const issSpeedKmS = 7.66;
-    const relativisticOffsetMicroseconds = ((Date.now() / 1000) * 0.000011).toFixed(6);
-
-    res.json({
-        location: {
-            lat,
-            lng,
-            label: `SkyFolk observer at ${lat.toFixed(2)}, ${lng.toFixed(2)}`,
-        },
-        sky: {
-            visibility: skyVisibilityLabel(now.getHours()),
-            moonPhase: moonPhaseLabel(now),
-            sunStatus: now.getHours() >= 6 && now.getHours() < 18 ? 'Sun above horizon' : 'Sun below horizon',
-            orbitUnit: '1 ISS orbit = 92.7 minutes',
-        },
-        iss: {
-            ...iss,
-            nextVisiblePassMinutes: nextPassMinutes,
-            watchPartyCount,
-            raceWidget: {
-                speedKmS: issSpeedKmS,
-                distanceInOneMinuteKm: Math.round(issSpeedKmS * 60),
-                equivalent: 'About Bengaluru to Mysuru in one minute of orbital travel.',
-            },
-            relativisticOffsetMicroseconds,
-        },
-        converter: {
-            screenTimeMinutes: 180,
-            equivalentIssOrbits: Number((180 / 92.7).toFixed(2)),
-            lightToMoonTrips: 870,
-        },
-    });
 });
 
 module.exports = router;

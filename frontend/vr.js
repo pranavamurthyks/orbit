@@ -13,7 +13,7 @@ let SCENES = [
     icon: '🪐',
     accent: '#D8B26B',
     name: "Saturn's Ring Plane",
-    desc: "Float inside Saturn's rings — ice boulders drifting past, the gas giant looming overhead.",
+    desc: "Float inside Saturn's rings - ice boulders drifting past, the gas giant looming overhead.",
     mode: 'Desktop + VR',
     status: 'stable'
   },
@@ -31,7 +31,7 @@ let SCENES = [
     icon: '🌑',
     accent: '#FF6600',
     name: 'Stellar Black Hole',
-    desc: 'Stand before a black hole — accretion disk blazing, relativistic jets firing, light bending around the event horizon.',
+    desc: 'Stand before a black hole - accretion disk blazing, relativistic jets firing, light bending around the event horizon.',
     mode: '360 mode',
     status: 'stable'
   },
@@ -86,13 +86,11 @@ const api = window.SkyFolkApi;
 
 const starCanvas = document.getElementById('starCanvas');
 const starCtx = starCanvas ? starCanvas.getContext('2d') : null;
-const spaceCursor = document.getElementById('spaceCursor');
 
 let starW = 0;
 let starH = 0;
 let stars = [];
 let mouse = { x: -999, y: -999 };
-let cursorAngle = -20;
 let resolvedConstellations = [];
 
 const CONSTELLATIONS = [
@@ -186,25 +184,13 @@ function initOrbitBackground() {
   }
 
   window.addEventListener('mousemove', event => {
-    const dx = event.clientX - mouse.x;
-    const dy = event.clientY - mouse.y;
     mouse.x = event.clientX;
     mouse.y = event.clientY;
-
-    if (spaceCursor) {
-      if (Math.abs(dx) + Math.abs(dy) > 0.4) {
-        cursorAngle = Math.atan2(dy, dx) * 180 / Math.PI + 90;
-      }
-
-      spaceCursor.style.opacity = '1';
-      spaceCursor.style.transform = `translate(${mouse.x - 23}px, ${mouse.y - 23}px) rotate(${cursorAngle}deg)`;
-    }
   });
 
   window.addEventListener('mouseleave', () => {
     mouse.x = -999;
     mouse.y = -999;
-    if (spaceCursor) spaceCursor.style.opacity = '0';
   });
 
   window.addEventListener('resize', resizeStars);
@@ -258,7 +244,7 @@ async function loadImmersiveOverview() {
     const missionCount = document.getElementById('mission-count');
     if (missionCount) {
       const count = result.telemetry?.missionsOnline || SCENES.length;
-      missionCount.textContent = `MISSION SELECT — ${count} ACTIVE TARGETS`;
+      missionCount.textContent = `MISSION SELECT - ${count} ACTIVE TARGETS`;
     }
 
     const footer = document.getElementById('mission-footer-copy');
@@ -298,7 +284,7 @@ function wireGlobalControls() {
   if (backBtn) backBtn.addEventListener('click', returnToMenu);
   wireProfileMenu();
 
-  // The in-VR back button is an <a-plane> inside A-Frame — it fires
+  // The in-VR back button is an <a-plane> inside A-Frame - it fires
   // A-Frame's own 'click' event (via raycaster), not a DOM click.
   // We wait for the scene to load before attaching so the element exists.
   const sceneEl = document.getElementById('vr-scene');
@@ -308,7 +294,7 @@ function wireGlobalControls() {
   });
 
   // Only switch to the 3D in-VR HUD when a real XR headset session is
-  // active. On desktop, A-Frame fires `enter-vr` for fullscreen too —
+  // active. On desktop, A-Frame fires `enter-vr` for fullscreen too -
   // in that case we keep the normal 2D HUD so the back button still works.
   sceneEl.addEventListener('enter-vr', () => {
     const xrSession = sceneEl.xrSession;
@@ -386,7 +372,7 @@ function activateScene(id) {
   document.body.classList.add('scene-active');
 
   // Reset the camera rig to its default starting point each time a new
-  // scene loads — prevents the user from spawning far away after flying
+  // scene loads - prevents the user from spawning far away after flying
   // around a large scene (e.g. the Solar System) with WASD.
   if (cameraRig) cameraRig.setAttribute('position', '0 1.6 0');
 

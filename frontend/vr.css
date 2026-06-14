@@ -1,6 +1,6 @@
 /* =============================================================
-   VR WORLD — Stylesheet
-   Design language: "mission control briefing" — dark space
+   VR WORLD - Stylesheet
+   Design language: "mission control briefing" - dark space
    backdrop, targeting-reticle card frames, monospace data
    readouts paired with a confident display face for the title.
    ============================================================= */
@@ -803,7 +803,7 @@ a-scene.hidden-scene {
 }
 
 /* -------------------------------------------------------------
-   VR mode: hide all 2D overlay chrome — the in-scene HUD
+   VR mode: hide all 2D overlay chrome - the in-scene HUD
    entity (#vr-hud) takes over inside the headset.
    ------------------------------------------------------------- */
 body.in-vr .hud,

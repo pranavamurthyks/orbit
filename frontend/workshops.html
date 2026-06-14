@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Space Dashboard — Live Feed</title>
+  <title>Space Dashboard - Live Feed</title>
   <link rel="stylesheet" href="login.css" />
   <style>
     :root {
@@ -878,7 +878,7 @@
 <header class="header">
   <div class="header-left">
     <h1>Space Dashboard</h1>
-    <p>LIVE FEED — ISRO · DRDO · NASA · ESA · IN-SPAACE &amp; MORE</p>
+    <p>LIVE FEED - ISRO · DRDO · NASA · ESA · IN-SPAACE &amp; MORE</p>
   </div>
   <div class="live-pill">
     <span class="live-dot"></span>
@@ -969,7 +969,7 @@
       <h2>NASA + Space Data</h2>
       <ul id="source-list">
         <li>Launches: backend `/api/feed` via The Space Devs.</li>
-        <li>Sky + ISS: backend `/api/sky/overview` via Open Notify and local calculations.</li>
+        <li>Sky + ISS: backend `/api/sky/overview` via live CelesTrak TLE data, SunCalc, and session proximity.</li>
         <li>Passport and Stardust: Mongo-backed SkyFolk user data.</li>
       </ul>
     </section>
@@ -989,6 +989,7 @@
 <div class="constellation-tooltip hidden" id="tooltip"></div>
 
 <script src="api.js"></script>
+<script src="ui-effects.js"></script>
 <script src="login.js"></script>
 <script>
   const DASHBOARD_API_BASE = localStorage.getItem('orbitApiBase') ||
@@ -1065,6 +1066,9 @@
       const skyPath = viewerLocation
         ? `/sky/overview?lat=${encodeURIComponent(viewerLocation.lat)}&lng=${encodeURIComponent(viewerLocation.lng)}`
         : '/sky/overview';
+      const immersivePath = viewerLocation
+        ? `/immersive/overview?lat=${encodeURIComponent(viewerLocation.lat)}&lng=${encodeURIComponent(viewerLocation.lng)}`
+        : '/immersive/overview';
       const authRequests = currentUser && currentUser.token
         ? [
             fetchAuthJson('/stardust/me', currentUser.token).catch(() => null),
@@ -1075,7 +1079,7 @@
       const [feedResponse, skyResponse, immersiveResponse, photosResponse, sessionsResponse, marketsResponse, stardustResponse, passportResponse] = await Promise.all([
         fetchJson('/feed'),
         fetchJson(skyPath),
-        fetchJson('/immersive/overview').catch(() => null),
+        fetchJson(immersivePath).catch(() => null),
         fetchJson('/photos').catch(() => null),
         fetchJson('/sessions').catch(() => null),
         fetchJson('/markets').catch(() => null),
@@ -1307,7 +1311,15 @@
 
     if (sky?.iss?.iss_position) {
       issPosition.textContent = `Lat ${Number(sky.iss.iss_position.latitude).toFixed(2)}, Lon ${Number(sky.iss.iss_position.longitude).toFixed(2)}`;
-      issUpdated.textContent = `Next visible pass in about ${sky.iss.nextVisiblePassMinutes} min • ${sky.iss.watchPartyCount} people near you could see this pass • astronaut drift ${sky.iss.relativisticOffsetMicroseconds} µs`;
+      const nextPassCopy = sky.iss.nextVisiblePassMinutes
+        ? sky.iss.visiblePassConfirmed
+          ? `Next visible pass in about ${sky.iss.nextVisiblePassMinutes} min`
+          : `Next overhead pass in about ${sky.iss.nextVisiblePassMinutes} min`
+        : 'No pass window is confirmed in the next 24 hours';
+      const watchPartyCopy = Number(sky.iss.watchPartyCount || 0) > 0
+        ? `${sky.iss.watchPartyCount} people near you could see this pass`
+        : 'No nearby watch parties are scheduled yet';
+      issUpdated.textContent = `${nextPassCopy} • ${watchPartyCopy} • astronaut drift ${sky.iss.relativisticOffsetMicroseconds} µs`;
     } else {
       issPosition.textContent = errorMessage || 'ISS position unavailable right now.';
       issUpdated.textContent = 'Using backend fallback state.';
@@ -1337,7 +1349,12 @@
     if (!summary) return;
 
     if (latestSky?.location?.label) {
-      summary.textContent = `${latestSky.location.label} • ${latestSky.sky.moonPhase} • next visible pass in about ${latestSky.iss.nextVisiblePassMinutes} minutes.`;
+      const nextPassCopy = latestSky.iss?.nextVisiblePassMinutes
+        ? latestSky.iss.visiblePassConfirmed
+          ? `next visible pass in about ${latestSky.iss.nextVisiblePassMinutes} minutes.`
+          : `next overhead pass in about ${latestSky.iss.nextVisiblePassMinutes} minutes.`
+        : 'no pass window is confirmed in the next 24 hours.';
+      summary.textContent = `${latestSky.location.label} • ${latestSky.sky.moonPhase} • ${nextPassCopy}`;
       return;
     }
 
@@ -1364,14 +1381,20 @@
     const photos = Array.isArray(latestPhotos?.photos) ? latestPhotos.photos : [];
     const passportEntries = Array.isArray(latestPassport?.entries) ? latestPassport.entries.length : 0;
     const stardustBalance = latestStardust ? `${Number(latestStardust.balance || 0).toLocaleString('en-IN')} ✦` : 'Sign in';
+    const nextPassValue = latestSky?.iss?.nextVisiblePassMinutes
+      ? `${latestSky.iss.nextVisiblePassMinutes} min to ${latestSky.iss.visiblePassConfirmed ? 'next visible pass' : 'next overhead pass'}`
+      : 'No pass in next 24h';
+    const watchPartyCopy = Number(latestSky?.iss?.watchPartyCount || 0) > 0
+      ? `${latestSky.iss.watchPartyCount} nearby watchers`
+      : 'no nearby watch parties yet';
 
     const cards = [
       {
         kicker: 'Live hub',
         title: 'Your Sky Tonight',
-        value: latestSky?.iss ? `${latestSky.iss.nextVisiblePassMinutes} min to next pass` : 'Sky feed offline',
+        value: latestSky?.iss ? nextPassValue : 'Sky feed offline',
         detail: latestSky?.sky
-          ? `${latestSky.sky.moonPhase} • ${latestSky.sky.visibility} • ${latestSky.iss.watchPartyCount} nearby watchers`
+          ? `${latestSky.sky.moonPhase} • ${latestSky.sky.visibility} • ${watchPartyCopy}`
           : 'Moon phase, visibility, and ISS watch-party context appear here.',
         href: 'iss.html',
         linkLabel: 'Open ISS tracker'
