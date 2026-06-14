@@ -35,6 +35,7 @@ const detailCost = document.getElementById('detailCost');
 const joinForm = document.getElementById('joinForm');
 const bringingInput = document.getElementById('bringingInput');
 const contributionAmount = document.getElementById('contributionAmount');
+const contributionReference = document.getElementById('contributionReference');
 const paymentLink = document.getElementById('paymentLink');
 const crewList = document.getElementById('crewList');
 const crewCount = document.getElementById('crewCount');
@@ -42,6 +43,14 @@ const hostActions = document.getElementById('hostActions');
 const summaryBtn = document.getElementById('summaryBtn');
 const cancelBtn = document.getElementById('cancelBtn');
 const fundingSummary = document.getElementById('fundingSummary');
+const fundingPoolMeta = document.getElementById('fundingPoolMeta');
+const fundingMethodCard = document.getElementById('fundingMethodCard');
+const fundingLedger = document.getElementById('fundingLedger');
+const fundingSpendList = document.getElementById('fundingSpendList');
+const contributionForm = document.getElementById('contributionForm');
+const extraContributionAmount = document.getElementById('extraContributionAmount');
+const extraContributionMethod = document.getElementById('extraContributionMethod');
+const extraContributionReference = document.getElementById('extraContributionReference');
 const api = window.SkyFolkApi;
 
 let selectedFundingOption = null;
@@ -265,6 +274,9 @@ function collectHostPayload() {
           enabled: true,
           type: selectedFundingOption,
           goal: goalAmount.value || null,
+          paymentMethod: document.getElementById('fundingMethod').value,
+          paymentHandle: document.getElementById('fundingHandle').value.trim(),
+          paymentInstructions: document.getElementById('fundingInstructions').value.trim(),
         }
       : { enabled: false },
   };
@@ -329,9 +341,14 @@ function selectSession(sessionId) {
     <span>${session.fundingRaised}/${session.fundingGoal} ${escapeHtml(session.fundingCurrency || 'INR')} funding</span>
   `;
   contributionAmount.value = '';
+  contributionReference.value = '';
   bringingInput.value = '';
   joinForm.classList.toggle('hidden', session.status === 'cancelled');
   hostActions.classList.toggle('hidden', !isHost);
+  contributionForm.classList.toggle('hidden', !(session.fundingEnabled && session.status !== 'cancelled'));
+  fundingPoolMeta.textContent = session.fundingEnabled
+    ? `${session.fundingRaised}/${session.fundingGoal} ${session.fundingCurrency || 'INR'}`
+    : 'No pool';
   if (session.spendSummary) {
     fundingSummary.textContent = session.spendSummary;
     fundingSummary.classList.remove('hidden');
@@ -339,7 +356,74 @@ function selectSession(sessionId) {
     fundingSummary.textContent = '';
     fundingSummary.classList.add('hidden');
   }
+  if (session.fundingEnabled) {
+    fundingMethodCard.innerHTML = `
+      <strong>${escapeHtml(session.fundingPaymentMethod || session.fundingType || 'Funding pool')}</strong><br>
+      ${session.fundingPaymentHandle ? `Handle/link: ${escapeHtml(session.fundingPaymentHandle)}<br>` : ''}
+      ${session.fundingPaymentInstructions ? escapeHtml(session.fundingPaymentInstructions) : 'Record contributions separately from Stardust and track refunds transparently.'}
+    `;
+    fundingMethodCard.classList.remove('hidden');
+  } else {
+    fundingMethodCard.textContent = '';
+    fundingMethodCard.classList.add('hidden');
+  }
+  renderFundingLedger(session, isHost);
   renderCrew(session);
+}
+
+function renderFundingLedger(session, isHost) {
+  const contributions = Array.isArray(session.fundingContributions) ? session.fundingContributions : [];
+  const spendItems = Array.isArray(session.fundingSpendItems) ? session.fundingSpendItems : [];
+
+  if (!contributions.length) {
+    fundingLedger.innerHTML = '<div class="empty">No funding contributions recorded yet.</div>';
+  } else {
+    fundingLedger.innerHTML = contributions.map(item => `
+      <div class="ledger-row">
+        <strong>${escapeHtml(item.name)} contributed ${item.amount} ${escapeHtml(session.fundingCurrency || 'INR')}</strong>
+        <div class="ledger-tags">
+          <span class="ledger-tag">${escapeHtml(item.method || 'method pending')}</span>
+          <span class="ledger-tag">status: ${escapeHtml(item.status || 'recorded')}</span>
+          <span class="ledger-tag">refund: ${escapeHtml(item.refundStatus || 'not-applicable')}</span>
+        </div>
+        ${item.reference ? `<span>Reference: ${escapeHtml(item.reference)}</span>` : ''}
+        ${item.note ? `<span>${escapeHtml(item.note)}</span>` : ''}
+        ${isHost && item.refundStatus !== 'refunded' && item.refundStatus !== 'not-applicable'
+          ? `<button class="refund-btn" type="button" data-refund-id="${item.id}">Mark refunded</button>`
+          : ''}
+      </div>
+    `).join('');
+  }
+
+  if (!spendItems.length) {
+    fundingSpendList.innerHTML = session.fundingEnabled
+      ? '<div class="empty">No spend items posted yet.</div>'
+      : '';
+  } else {
+    fundingSpendList.innerHTML = spendItems.map(item => `
+      <div class="spend-row">
+        <strong>${escapeHtml(item.label)} - ${item.amount} ${escapeHtml(session.fundingCurrency || 'INR')}</strong>
+        ${item.note ? `<span>${escapeHtml(item.note)}</span>` : ''}
+      </div>
+    `).join('');
+  }
+
+  fundingLedger.querySelectorAll('[data-refund-id]').forEach(button => {
+    button.addEventListener('click', async () => {
+      try {
+        const result = await api.post(`/sessions/${session.id}/contributions/${button.dataset.refundId}/refund`, {
+          refundStatus: 'refunded',
+          note: 'Host marked this contribution as refunded after cancellation.',
+        });
+        demoSessions = demoSessions.map(item => String(item.id) === String(result.session.id) ? result.session : item);
+        renderSessions();
+        selectSession(result.session.id);
+        showToast('Contribution marked as refunded');
+      } catch (error) {
+        showToast(error.message);
+      }
+    });
+  });
 }
 
 function renderCrew(session) {
@@ -453,6 +537,7 @@ joinForm.addEventListener('submit', async event => {
       bringing,
       contributionAmount: contribution,
       contributionMethod: paymentLink.value,
+      contributionReference: contributionReference.value.trim(),
     });
 
     myStardust = result.balance;
@@ -469,15 +554,68 @@ joinForm.addEventListener('submit', async event => {
   }
 });
 
+contributionForm.addEventListener('submit', async event => {
+  event.preventDefault();
+  const session = demoSessions.find(item => String(item.id) === selectedSessionId);
+  if (!session) return;
+
+  const amount = Math.max(0, Math.floor(Number(extraContributionAmount.value) || 0));
+  if (amount < 1) {
+    showToast('Add a contribution amount first');
+    return;
+  }
+
+  try {
+    const result = await api.post(`/sessions/${session.id}/contribute`, {
+      amount,
+      method: extraContributionMethod.value,
+      reference: extraContributionReference.value.trim(),
+      note: 'Recorded from the participant funding form.',
+    });
+    demoSessions = demoSessions.map(item => String(item.id) === String(result.session.id) ? result.session : item);
+    extraContributionAmount.value = '';
+    extraContributionReference.value = '';
+    renderSessions();
+    selectSession(result.session.id);
+    showToast('Contribution recorded in the funding ledger');
+  } catch (error) {
+    showToast(error.message);
+  }
+});
+
+function parseSpendItems(input) {
+  return String(input || '')
+    .split('\n')
+    .map(line => line.trim())
+    .filter(Boolean)
+    .map(line => {
+      const [label, amount, note] = line.split('|').map(part => String(part || '').trim());
+      return {
+        label,
+        amount: Number(amount || 0),
+        note: note || '',
+      };
+    })
+    .filter(item => item.label && item.amount > 0);
+}
+
 summaryBtn.addEventListener('click', async () => {
   const session = demoSessions.find(item => String(item.id) === selectedSessionId);
   if (!session) return;
 
   const summary = window.prompt('Post a short spend summary for contributors:', session.spendSummary || 'Snacks, chai, and shared telescope accessories for the meetup.');
   if (summary === null) return;
+  const itemSeed = Array.isArray(session.fundingSpendItems) && session.fundingSpendItems.length
+    ? session.fundingSpendItems.map(item => `${item.label}|${item.amount}|${item.note || ''}`).join('\n')
+    : 'Snacks|200|Tea and biscuits\nTripod rental|400|Shared gear';
+  const itemInput = window.prompt('Optional spend items, one per line as label|amount|note', itemSeed);
+  if (itemInput === null) return;
 
   try {
-    const result = await api.post(`/sessions/${session.id}/spend-summary`, { summary });
+    const result = await api.post(`/sessions/${session.id}/spend-summary`, {
+      summary,
+      spendItems: parseSpendItems(itemInput),
+    });
     demoSessions = demoSessions.map(item => String(item.id) === String(result.session.id) ? result.session : item);
     renderSessions();
     selectSession(result.session.id);

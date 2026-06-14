@@ -172,7 +172,7 @@
             <div class="step-kicker">04 / Location</div>
             <h2>Where should everyone meet?</h2>
             <p>Tap the demo map to set coordinates, then add the human-readable spot.</p>
-            <button class="map-picker" id="mapPicker" type="button" data-progress-field>
+              <button class="map-picker" id="mapPicker" type="button" data-progress-field>
               <span class="map-icon" id="mapIcon">⌖</span>
               <span id="mapLabel">Tap to set location</span>
               <small id="mapCoords"></small>
@@ -234,6 +234,23 @@
               <label class="goal-row" id="goalRow">
                 <span>Goal</span>
                 <input type="number" id="goalAmount" min="0" step="any" placeholder="0.00" />
+              </label>
+              <label class="field">
+                <span>Payment method</span>
+                <select id="fundingMethod">
+                  <option value="UPI">UPI</option>
+                  <option value="Razorpay">Razorpay</option>
+                  <option value="Bank transfer">Bank transfer</option>
+                  <option value="Cash at meetup">Cash at meetup</option>
+                </select>
+              </label>
+              <label class="field">
+                <span>Payment handle or link</span>
+                <input type="text" id="fundingHandle" placeholder="e.g. skyfolk@upi or payment link" />
+              </label>
+              <label class="field">
+                <span>Instructions</span>
+                <textarea id="fundingInstructions" placeholder="Tell contributors how to pay, what note to include, and when refunds will be processed."></textarea>
               </label>
             </div>
           </section>
@@ -307,7 +324,7 @@
                     <input type="number" id="contributionAmount" min="0" step="1" placeholder="0" />
                   </label>
                   <label class="field">
-                    <span>Payment link</span>
+                    <span>Payment method</span>
                     <select id="paymentLink">
                       <option value="Orbit Pay">Orbit Pay</option>
                       <option value="UPI">UPI</option>
@@ -316,9 +333,46 @@
                     </select>
                   </label>
                 </div>
+                <label class="field">
+                  <span>Payment reference <span class="optional">(optional)</span></span>
+                  <input type="text" id="contributionReference" placeholder="UPI ref, Razorpay id, or note" />
+                </label>
 
                 <button class="submit-btn join-submit" type="submit">Join session</button>
               </form>
+
+              <div class="funding-ledger-block">
+                <div class="panel-head compact">
+                  <div class="section-label">Funding pool</div>
+                  <span class="crew-count" id="fundingPoolMeta">No pool</span>
+                </div>
+                <div class="funding-summary hidden" id="fundingSummary"></div>
+                <div class="funding-method hidden" id="fundingMethodCard"></div>
+                <form class="contribution-form hidden" id="contributionForm">
+                  <div class="payment-grid">
+                    <label class="field">
+                      <span>Record extra contribution</span>
+                      <input type="number" id="extraContributionAmount" min="1" step="1" placeholder="0" />
+                    </label>
+                    <label class="field">
+                      <span>Method</span>
+                      <select id="extraContributionMethod">
+                        <option value="UPI">UPI</option>
+                        <option value="Razorpay">Razorpay</option>
+                        <option value="Bank transfer">Bank transfer</option>
+                        <option value="Cash at meetup">Cash at meetup</option>
+                      </select>
+                    </label>
+                  </div>
+                  <label class="field">
+                    <span>Reference</span>
+                    <input type="text" id="extraContributionReference" placeholder="Transaction id or note" />
+                  </label>
+                  <button class="submit-btn join-submit" type="submit">Record contribution</button>
+                </form>
+                <div class="funding-ledger" id="fundingLedger"></div>
+                <div class="funding-spend-list" id="fundingSpendList"></div>
+              </div>
 
               <div class="host-actions hidden" id="hostActions">
                 <div class="panel-head compact">
@@ -330,8 +384,6 @@
                   <button class="submit-btn host-action-btn ghost" id="cancelBtn" type="button">Cancel session</button>
                 </div>
               </div>
-
-              <div class="funding-summary hidden" id="fundingSummary"></div>
 
               <div class="crew-block">
                 <div class="panel-head compact">

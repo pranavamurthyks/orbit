@@ -39,6 +39,71 @@ const sessionParticipantSchema = new mongoose.Schema(
     { _id: true }
 );
 
+const fundingContributionSchema = new mongoose.Schema(
+    {
+        userId: {
+            type: mongoose.Schema.Types.ObjectId,
+            ref: 'User',
+            default: null,
+        },
+        name: {
+            type: String,
+            required: true,
+            trim: true,
+        },
+        amount: {
+            type: Number,
+            required: true,
+        },
+        method: {
+            type: String,
+            default: '',
+            trim: true,
+        },
+        reference: {
+            type: String,
+            default: '',
+            trim: true,
+        },
+        status: {
+            type: String,
+            default: 'recorded',
+            trim: true,
+        },
+        refundStatus: {
+            type: String,
+            default: 'not-applicable',
+            trim: true,
+        },
+        note: {
+            type: String,
+            default: '',
+            trim: true,
+        },
+    },
+    { _id: true, timestamps: true }
+);
+
+const fundingSpendItemSchema = new mongoose.Schema(
+    {
+        label: {
+            type: String,
+            required: true,
+            trim: true,
+        },
+        amount: {
+            type: Number,
+            required: true,
+        },
+        note: {
+            type: String,
+            default: '',
+            trim: true,
+        },
+    },
+    { _id: true, timestamps: true }
+);
+
 const sessionSchema = new mongoose.Schema(
     {
         hostUserId: {
@@ -96,7 +161,18 @@ const sessionSchema = new mongoose.Schema(
             goal: { type: Number, default: 0 },
             raised: { type: Number, default: 0 },
             currency: { type: String, default: 'INR', trim: true },
+            paymentMethod: { type: String, default: '', trim: true },
+            paymentHandle: { type: String, default: '', trim: true },
+            paymentInstructions: { type: String, default: '', trim: true },
             spendSummary: { type: String, default: '', trim: true },
+            contributions: {
+                type: [fundingContributionSchema],
+                default: [],
+            },
+            spendItems: {
+                type: [fundingSpendItemSchema],
+                default: [],
+            },
         },
         participants: {
             type: [sessionParticipantSchema],

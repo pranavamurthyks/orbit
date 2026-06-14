@@ -1364,12 +1364,92 @@ button {
   margin-top: 2px;
 }
 
+.funding-ledger-block,
 .host-actions,
 .funding-summary,
 .crew-block {
   border-top: 1px solid var(--border);
   margin-top: 20px;
   padding-top: 18px;
+}
+
+.funding-method {
+  border-radius: var(--radius-md);
+  border: 1px solid rgba(150,170,255,0.18);
+  background: rgba(255,255,255,0.035);
+  color: var(--text-muted);
+  font-size: 13px;
+  line-height: 1.6;
+  padding: 12px;
+  margin-top: 12px;
+}
+
+.contribution-form {
+  margin-top: 14px;
+}
+
+.funding-ledger,
+.funding-spend-list {
+  display: grid;
+  gap: 10px;
+  margin-top: 14px;
+}
+
+.ledger-row {
+  display: grid;
+  gap: 8px;
+  border: 1px solid rgba(150,170,255,0.18);
+  border-radius: var(--radius-md);
+  background: rgba(255,255,255,0.035);
+  padding: 12px;
+}
+
+.ledger-row strong,
+.spend-row strong {
+  color: var(--text);
+}
+
+.ledger-row span,
+.spend-row span {
+  color: var(--text-muted);
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+.ledger-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.ledger-tag {
+  border-radius: 999px;
+  border: 1px solid rgba(150,170,255,0.18);
+  background: rgba(100,130,255,0.08);
+  color: var(--text-muted);
+  font-size: 11px;
+  padding: 4px 8px;
+}
+
+.refund-btn {
+  justify-self: start;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: rgba(255,255,255,0.04);
+  color: var(--text);
+  font: inherit;
+  font-size: 12px;
+  padding: 7px 10px;
+  cursor: pointer;
+}
+
+.spend-row {
+  display: grid;
+  gap: 5px;
+  border: 1px solid rgba(150,170,255,0.18);
+  border-radius: var(--radius-md);
+  background: rgba(255,255,255,0.03);
+  padding: 11px 12px;
 }
 
 .host-action-grid {
