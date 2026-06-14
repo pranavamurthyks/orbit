@@ -6,8 +6,7 @@ let W, H, stars = [], mouse = { x: -999, y: -999 };
 const HOVER_RADIUS = 104;
 const AUTH_SESSION_KEY = 'orbitCurrentUser';
 const AUTH_TOKEN_KEY = 'orbitAuthToken';
-const API_BASE = localStorage.getItem('orbitApiBase') ||
-  (window.location.protocol === 'file:' ? 'http://127.0.0.1:3000/api' : `${window.location.origin}/api`);
+const API_BASE = localStorage.getItem('orbitApiBase') || 'https://orbit-fkec.onrender.com/api';
 
 // Constellation definitions as relative [0-1] coords
 const CONSTELLATIONS = [
