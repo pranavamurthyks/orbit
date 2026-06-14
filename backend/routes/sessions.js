@@ -2,6 +2,11 @@ const express = require('express');
 const Session = require('../models/Session');
 const requireAuth = require('../middleware/auth');
 const { ensureDemoContent } = require('../services/demoContent');
+const {
+    buildSessionPaymentArtifact,
+    validateContributionInput,
+    validateFundingSetup,
+} = require('../services/sessionPayments');
 const { buildSessionStart } = require('../services/sessionTiming');
 const { addLedgerEntry } = require('../services/stardustService');
 
@@ -77,9 +82,53 @@ router.get('/', async (req, res) => {
     res.json({ sessions: sessions.map(publicSession) });
 });
 
+router.get('/:sessionId/payment', async (req, res) => {
+    const session = await Session.findById(req.params.sessionId).lean();
+
+    if (!session) {
+        return res.status(404).json({ message: 'Session not found' });
+    }
+
+    if (!session.fundingPool?.enabled) {
+        return res.status(409).json({ message: 'This session does not have an active funding pool' });
+    }
+
+    const amount = Math.max(0, Math.floor(Number(req.query.amount || 0)));
+    const payment = await buildSessionPaymentArtifact(session, amount);
+    res.json({ payment });
+});
+
 router.post('/', requireAuth, async (req, res) => {
     const { title, description, date, time, capacity, location, funding } = req.body;
     const startsAt = buildSessionStart(date, time);
+    let fundingPool = {
+        enabled: false,
+        type: '',
+        goal: 500,
+        raised: 0,
+        currency: 'INR',
+        paymentMethod: '',
+        paymentHandle: '',
+        paymentInstructions: '',
+    };
+
+    try {
+        const validatedFunding = validateFundingSetup(funding);
+        if (validatedFunding.enabled) {
+            fundingPool = {
+                enabled: true,
+                type: validatedFunding.type || '',
+                goal: Number(validatedFunding.goal || 500),
+                raised: 0,
+                currency: 'INR',
+                paymentMethod: validatedFunding.paymentMethod,
+                paymentHandle: validatedFunding.paymentHandle,
+                paymentInstructions: validatedFunding.paymentInstructions,
+            };
+        }
+    } catch (error) {
+        return res.status(400).json({ message: error.message });
+    }
 
     const session = await Session.create({
         hostUserId: req.user._id,
@@ -98,16 +147,7 @@ router.post('/', requireAuth, async (req, res) => {
             lat: location?.lat ?? null,
             lng: location?.lng ?? null,
         },
-        fundingPool: {
-            enabled: Boolean(funding?.enabled),
-            type: funding?.type || '',
-            goal: Number(funding?.goal || 500),
-            raised: 0,
-            currency: 'INR',
-            paymentMethod: funding?.paymentMethod || '',
-            paymentHandle: funding?.paymentHandle || '',
-            paymentInstructions: funding?.paymentInstructions || '',
-        },
+        fundingPool,
         participants: [
             {
                 userId: req.user._id,
@@ -142,16 +182,30 @@ router.post('/:sessionId/join', requireAuth, async (req, res) => {
         return res.status(409).json({ message: 'You already joined this session' });
     }
 
+    let validatedContribution = null;
+    try {
+        validatedContribution = Number(contributionAmount || 0) > 0
+            ? validateContributionInput({
+                session,
+                amount: contributionAmount,
+                method: contributionMethod,
+                reference: contributionReference,
+            })
+            : null;
+    } catch (error) {
+        return res.status(400).json({ message: error.message });
+    }
+
     await addLedgerEntry(req.user, -session.cost, 'Joined a community session', 'session', session._id.toString());
 
-    const contribution = Math.max(0, Math.floor(Number(contributionAmount || 0)));
+    const contribution = validatedContribution ? validatedContribution.amount : 0;
     session.participants.push({
         userId: req.user._id,
         name: req.user.displayName,
         initials: initialsFor(req.user.displayName),
         bringing,
         contributionAmount: contribution,
-        contributionMethod: contributionMethod || '',
+        contributionMethod: validatedContribution?.method || '',
     });
 
     if (contribution > 0 && session.fundingPool?.enabled) {
@@ -159,11 +213,15 @@ router.post('/:sessionId/join', requireAuth, async (req, res) => {
             userId: req.user._id,
             name: req.user.displayName,
             amount: contribution,
-            method: contributionMethod || session.fundingPool.paymentMethod || '',
-            reference: String(contributionReference || '').trim(),
-            status: 'recorded',
+            method: validatedContribution.method || '',
+            reference: validatedContribution.reference,
+            status: validatedContribution.status,
             refundStatus: 'not-applicable',
-            note: 'Contributor joined the session and recorded a funding-pool contribution.',
+            note: validatedContribution.status === 'proof-submitted'
+                ? 'Contributor submitted payment proof. Host confirmation is still pending.'
+                : validatedContribution.status === 'pledged'
+                    ? 'Contributor plans to pay at the meetup.'
+                    : 'Contributor joined the session and recorded a funding-pool contribution.',
         });
         session.fundingPool.raised += contribution;
     }
@@ -216,22 +274,58 @@ router.post('/:sessionId/contribute', requireAuth, async (req, res) => {
         return res.status(409).json({ message: 'This session was cancelled' });
     }
 
-    const contributionAmount = Math.max(0, Math.floor(Number(amount || 0)));
-    if (contributionAmount < 1) {
-        return res.status(400).json({ message: 'amount must be at least 1' });
+    let validatedContribution;
+    try {
+        validatedContribution = validateContributionInput({
+            session,
+            amount,
+            method,
+            reference,
+        });
+    } catch (error) {
+        return res.status(400).json({ message: error.message });
     }
 
     session.fundingPool.contributions.push({
         userId: req.user._id,
         name: req.user.displayName,
-        amount: contributionAmount,
-        method: String(method || session.fundingPool.paymentMethod || '').trim(),
-        reference: String(reference || '').trim(),
-        status: 'recorded',
+        amount: validatedContribution.amount,
+        method: validatedContribution.method || '',
+        reference: validatedContribution.reference,
+        status: validatedContribution.status,
         refundStatus: 'not-applicable',
-        note: String(note || '').trim(),
+        note: String(note || '').trim() || (
+            validatedContribution.status === 'proof-submitted'
+                ? 'Payment proof submitted for host confirmation.'
+                : validatedContribution.status === 'pledged'
+                    ? 'Contributor plans to pay at the meetup.'
+                    : ''
+        ),
     });
-    session.fundingPool.raised += contributionAmount;
+    session.fundingPool.raised += validatedContribution.amount;
+    await session.save();
+
+    res.json({ session: publicSession(session) });
+});
+
+router.post('/:sessionId/contributions/:contributionId/confirm', requireAuth, async (req, res) => {
+    const session = await Session.findById(req.params.sessionId);
+
+    if (!session) {
+        return res.status(404).json({ message: 'Session not found' });
+    }
+
+    if (!session.hostUserId || session.hostUserId.toString() !== req.user._id.toString()) {
+        return res.status(403).json({ message: 'Only the host can confirm contributions' });
+    }
+
+    const contribution = session.fundingPool?.contributions?.id(req.params.contributionId);
+    if (!contribution) {
+        return res.status(404).json({ message: 'Contribution not found' });
+    }
+
+    contribution.status = 'confirmed';
+    contribution.note = String(req.body.note || contribution.note || 'Host confirmed the contribution.').trim();
     await session.save();
 
     res.json({ session: publicSession(session) });
@@ -275,8 +369,14 @@ router.post('/:sessionId/cancel', requireAuth, async (req, res) => {
     if (Array.isArray(session.fundingPool?.contributions)) {
         session.fundingPool.contributions.forEach((item) => {
             if (item.amount > 0) {
-                item.refundStatus = 'pending';
-                item.note = item.note || 'Refund should be issued because the session was cancelled.';
+                const method = String(item.method || '').trim();
+                const refundApplies = method !== 'Cash at meetup' || item.status === 'confirmed';
+                item.refundStatus = refundApplies ? 'pending' : 'not-applicable';
+                item.note = item.note || (
+                    refundApplies
+                        ? 'Refund should be issued because the session was cancelled.'
+                        : 'No refund is due yet because this contribution was only pledged for the meetup.'
+                );
             }
         });
     }

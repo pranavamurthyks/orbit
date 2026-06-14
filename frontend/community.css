@@ -1474,6 +1474,33 @@ button {
   margin-top: 12px;
 }
 
+.funding-qr {
+  display: grid;
+  justify-items: center;
+  gap: 10px;
+  border-radius: var(--radius-md);
+  border: 1px solid rgba(150,170,255,0.18);
+  background: rgba(255,255,255,0.03);
+  margin-top: 12px;
+  padding: 14px;
+}
+
+.funding-qr img {
+  width: min(220px, 100%);
+  aspect-ratio: 1;
+  border-radius: 18px;
+  background: #fff;
+  object-fit: contain;
+  padding: 8px;
+}
+
+.funding-qr span {
+  color: var(--text-muted);
+  font-size: 12px;
+  line-height: 1.5;
+  text-align: center;
+}
+
 .funding-method strong {
   color: var(--text);
 }
@@ -1539,6 +1566,10 @@ button {
   font-size: 12px;
   padding: 7px 10px;
   cursor: pointer;
+}
+
+.refund-btn + .refund-btn {
+  margin-left: 8px;
 }
 
 .spend-row {

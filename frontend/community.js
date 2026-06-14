@@ -56,6 +56,9 @@ const fundingMethodCard = document.getElementById('fundingMethodCard');
 const fundingActionBar = document.getElementById('fundingActionBar');
 const openPaymentBtn = document.getElementById('openPaymentBtn');
 const copyPaymentBtn = document.getElementById('copyPaymentBtn');
+const fundingQrCard = document.getElementById('fundingQrCard');
+const fundingQrImage = document.getElementById('fundingQrImage');
+const fundingQrCaption = document.getElementById('fundingQrCaption');
 const fundingLedger = document.getElementById('fundingLedger');
 const fundingSpendList = document.getElementById('fundingSpendList');
 const contributionForm = document.getElementById('contributionForm');
@@ -76,6 +79,8 @@ let H = 0;
 let stars = [];
 let mouse = { x: -999, y: -999 };
 let resolvedConstellations = [];
+let currentPaymentDetails = null;
+let paymentRequestId = 0;
 
 const CONSTELLATIONS = [
   { stars: [[0.08,0.20],[0.11,0.27],[0.09,0.34],[0.14,0.30],[0.19,0.30],[0.17,0.22],[0.20,0.38]], lines: [[0,1],[1,2],[1,3],[3,4],[4,5],[4,6]] },
@@ -437,14 +442,11 @@ function isProbablyUrl(value) {
   return /^https?:\/\//i.test(String(value || '').trim());
 }
 
-function buildPaymentDetails(session, amount = selectedContributionAmount()) {
+function fallbackPaymentDetails(session, amount = selectedContributionAmount()) {
   const method = String(session?.fundingPaymentMethod || '').trim();
   const handle = String(session?.fundingPaymentHandle || '').trim();
   const instructions = String(session?.fundingPaymentInstructions || '').trim();
   const currency = String(session?.fundingCurrency || 'INR').trim();
-  const payee = String(session?.hostName || 'SkyFolk host').trim();
-  const note = `${session?.title || 'SkyFolk session'} funding contribution`;
-
   const summaryLines = [
     `${session?.title || 'Session'} funding pool`,
     `Method: ${method || 'Manual payment'}`,
@@ -454,44 +456,83 @@ function buildPaymentDetails(session, amount = selectedContributionAmount()) {
   if (amount > 0) summaryLines.push(`Suggested amount: ${amount} ${currency}`);
   if (instructions) summaryLines.push(`Instructions: ${instructions}`);
 
-  if (!method && !handle && !instructions) {
-    return {
-      summary: summaryLines.join('\n'),
-      actionLabel: '',
-      actionUrl: '',
-    };
-  }
-
-  if (isProbablyUrl(handle)) {
-    return {
-      summary: summaryLines.join('\n'),
-      actionLabel: method === 'Razorpay' ? 'Open Razorpay link' : 'Open payment link',
-      actionUrl: handle,
-    };
-  }
-
-  if (method === 'UPI' && handle) {
-    const params = new URLSearchParams({
-      pa: handle,
-      pn: payee,
-      cu: currency,
-      tn: note,
-    });
-    if (amount > 0) {
-      params.set('am', String(amount));
-    }
-    return {
-      summary: summaryLines.join('\n'),
-      actionLabel: 'Open UPI app',
-      actionUrl: `upi://pay?${params.toString()}`,
-    };
-  }
-
   return {
+    sessionId: String(session?.id || ''),
+    amount,
+    method,
+    handle,
+    currency,
+    instructions,
     summary: summaryLines.join('\n'),
-    actionLabel: handle ? 'Use payment details' : '',
+    actionLabel: '',
     actionUrl: '',
+    qrCodeDataUrl: '',
+    referenceRequired: ['UPI', 'Razorpay', 'Bank transfer'].includes(method),
+    loading: false,
   };
+}
+
+function currentPaymentFor(session, amount = selectedContributionAmount()) {
+  const safeAmount = Math.max(0, Math.floor(Number(amount) || 0));
+  if (
+    currentPaymentDetails &&
+    currentPaymentDetails.sessionId === String(session?.id) &&
+    currentPaymentDetails.amount === safeAmount
+  ) {
+    return currentPaymentDetails;
+  }
+  return fallbackPaymentDetails(session, safeAmount);
+}
+
+async function refreshPaymentDetails(session, amount = selectedContributionAmount()) {
+  if (!session?.fundingEnabled) {
+    currentPaymentDetails = null;
+    renderFundingActions(session);
+    return;
+  }
+
+  const safeAmount = Math.max(0, Math.floor(Number(amount) || 0));
+  const requestId = ++paymentRequestId;
+  currentPaymentDetails = {
+    ...fallbackPaymentDetails(session, safeAmount),
+    loading: true,
+  };
+  renderFundingActions(session);
+
+  try {
+    const result = await api.get(`/sessions/${session.id}/payment?amount=${safeAmount}`);
+    if (requestId !== paymentRequestId || String(selectedSessionId) !== String(session.id)) {
+      return;
+    }
+    currentPaymentDetails = {
+      ...result.payment,
+      sessionId: String(session.id),
+      amount: safeAmount,
+      loading: false,
+    };
+  } catch (error) {
+    if (requestId !== paymentRequestId || String(selectedSessionId) !== String(session.id)) {
+      return;
+    }
+    currentPaymentDetails = {
+      ...fallbackPaymentDetails(session, safeAmount),
+      loading: false,
+      error: error.message,
+    };
+  }
+
+  renderFundingActions(session);
+}
+
+function syncFundingMethodSelectors(session) {
+  const configuredMethod = String(session?.fundingPaymentMethod || '').trim();
+  if (configuredMethod && Array.from(paymentLink.options).some(option => option.value === configuredMethod)) {
+    paymentLink.value = configuredMethod;
+    extraContributionMethod.value = configuredMethod;
+  }
+
+  paymentLink.disabled = Boolean(configuredMethod);
+  extraContributionMethod.disabled = Boolean(configuredMethod);
 }
 
 function renderFundingActions(session) {
@@ -499,23 +540,30 @@ function renderFundingActions(session) {
     fundingMethodCard.textContent = '';
     fundingMethodCard.classList.add('hidden');
     fundingActionBar.classList.add('hidden');
+    fundingQrCard.classList.add('hidden');
     return;
   }
 
   const amount = selectedContributionAmount();
-  const payment = buildPaymentDetails(session, amount);
+  const payment = currentPaymentFor(session, amount);
   const parts = [
-    `<strong>${escapeHtml(session.fundingPaymentMethod || session.fundingType || 'Funding pool')}</strong>`,
+    `<strong>${escapeHtml(payment.method || session.fundingPaymentMethod || session.fundingType || 'Funding pool')}</strong>`,
   ];
 
-  if (session.fundingPaymentHandle) {
-    const handle = escapeHtml(session.fundingPaymentHandle);
-    parts.push(isProbablyUrl(session.fundingPaymentHandle) ? `<a href="${handle}" target="_blank" rel="noreferrer">${handle}</a>` : `Handle: ${handle}`);
+  if (payment.handle) {
+    const handle = escapeHtml(payment.handle);
+    parts.push(isProbablyUrl(payment.handle) ? `<a href="${handle}" target="_blank" rel="noreferrer">${handle}</a>` : `Handle: ${handle}`);
   }
   if (amount > 0) {
-    parts.push(`Suggested amount: ${amount} ${escapeHtml(session.fundingCurrency || 'INR')}`);
+    parts.push(`Suggested amount: ${amount} ${escapeHtml(payment.currency || session.fundingCurrency || 'INR')}`);
   }
-  parts.push(escapeHtml(session.fundingPaymentInstructions || 'Record contributions separately from Stardust and track refunds transparently.'));
+  parts.push(escapeHtml(payment.instructions || session.fundingPaymentInstructions || 'Record contributions separately from Stardust and track refunds transparently.'));
+  if (payment.referenceRequired) {
+    parts.push('Record the payment reference before you join so the host can confirm the contribution.');
+  }
+  if (payment.loading) {
+    parts.push('Refreshing the session payment artifact...');
+  }
 
   fundingMethodCard.innerHTML = parts.join('<br>');
   fundingMethodCard.classList.remove('hidden');
@@ -524,6 +572,17 @@ function renderFundingActions(session) {
   openPaymentBtn.disabled = !payment.actionUrl;
   copyPaymentBtn.disabled = !payment.summary;
   fundingActionBar.classList.toggle('hidden', !payment.summary && !payment.actionUrl);
+
+  if (payment.qrCodeDataUrl) {
+    fundingQrImage.src = payment.qrCodeDataUrl;
+    fundingQrCaption.textContent = payment.referenceRequired
+      ? 'Scan to pay, then keep the transaction reference so the host can confirm it.'
+      : 'Scan to open the configured payment flow for this meetup.';
+    fundingQrCard.classList.remove('hidden');
+  } else {
+    fundingQrImage.removeAttribute('src');
+    fundingQrCard.classList.add('hidden');
+  }
 }
 
 function renderSessions() {
@@ -578,9 +637,7 @@ function selectSession(sessionId) {
   contributionAmount.value = '';
   contributionReference.value = '';
   bringingInput.value = '';
-  if (session.fundingPaymentMethod && Array.from(paymentLink.options).some(option => option.value === session.fundingPaymentMethod)) {
-    paymentLink.value = session.fundingPaymentMethod;
-  }
+  syncFundingMethodSelectors(session);
   joinForm.classList.toggle('hidden', session.status === 'cancelled');
   hostActions.classList.toggle('hidden', !isHost);
   contributionForm.classList.toggle('hidden', !(session.fundingEnabled && session.status !== 'cancelled'));
@@ -594,7 +651,7 @@ function selectSession(sessionId) {
     fundingSummary.textContent = '';
     fundingSummary.classList.add('hidden');
   }
-  renderFundingActions(session);
+  refreshPaymentDetails(session);
   renderFundingLedger(session, isHost);
   renderCrew(session);
 }
@@ -616,6 +673,9 @@ function renderFundingLedger(session, isHost) {
         </div>
         ${item.reference ? `<span>Reference: ${escapeHtml(item.reference)}</span>` : ''}
         ${item.note ? `<span>${escapeHtml(item.note)}</span>` : ''}
+        ${isHost && item.status !== 'confirmed'
+          ? `<button class="refund-btn" type="button" data-confirm-id="${item.id}">Confirm payment</button>`
+          : ''}
         ${isHost && item.refundStatus !== 'refunded' && item.refundStatus !== 'not-applicable'
           ? `<button class="refund-btn" type="button" data-refund-id="${item.id}">Mark refunded</button>`
           : ''}
@@ -647,6 +707,22 @@ function renderFundingLedger(session, isHost) {
         renderSessions();
         selectSession(result.session.id);
         showToast('Contribution marked as refunded');
+      } catch (error) {
+        showToast(error.message);
+      }
+    });
+  });
+
+  fundingLedger.querySelectorAll('[data-confirm-id]').forEach(button => {
+    button.addEventListener('click', async () => {
+      try {
+        const result = await api.post(`/sessions/${session.id}/contributions/${button.dataset.confirmId}/confirm`, {
+          note: 'Host confirmed the contribution after checking the payment proof.',
+        });
+        demoSessions = demoSessions.map(item => String(item.id) === String(result.session.id) ? result.session : item);
+        renderSessions();
+        selectSession(result.session.id);
+        showToast('Contribution confirmed');
       } catch (error) {
         showToast(error.message);
       }
@@ -783,6 +859,11 @@ joinForm.addEventListener('submit', async event => {
   }
 
   const contribution = Math.max(0, Math.floor(Number(contributionAmount.value) || 0));
+  const payment = currentPaymentFor(session, contribution);
+  if (contribution > 0 && payment.referenceRequired && !contributionReference.value.trim()) {
+    showToast('Add the payment reference before joining');
+    return;
+  }
   try {
     const result = await api.post(`/sessions/${session.id}/join`, {
       bringing,
@@ -816,6 +897,12 @@ contributionForm.addEventListener('submit', async event => {
     return;
   }
 
+  const payment = currentPaymentFor(session, amount);
+  if (payment.referenceRequired && !extraContributionReference.value.trim()) {
+    showToast('Add the payment reference before recording the contribution');
+    return;
+  }
+
   try {
     const result = await api.post(`/sessions/${session.id}/contribute`, {
       amount,
@@ -836,18 +923,18 @@ contributionForm.addEventListener('submit', async event => {
 
 contributionAmount.addEventListener('input', () => {
   const session = demoSessions.find(item => String(item.id) === selectedSessionId);
-  if (session) renderFundingActions(session);
+  if (session) refreshPaymentDetails(session);
 });
 
 paymentLink.addEventListener('change', () => {
   const session = demoSessions.find(item => String(item.id) === selectedSessionId);
-  if (session) renderFundingActions(session);
+  if (session) refreshPaymentDetails(session);
 });
 
 openPaymentBtn.addEventListener('click', () => {
   const session = demoSessions.find(item => String(item.id) === selectedSessionId);
   if (!session) return;
-  const payment = buildPaymentDetails(session);
+  const payment = currentPaymentFor(session);
   if (!payment.actionUrl) {
     showToast('No direct payment link is available for this session');
     return;
@@ -862,7 +949,7 @@ openPaymentBtn.addEventListener('click', () => {
 copyPaymentBtn.addEventListener('click', async () => {
   const session = demoSessions.find(item => String(item.id) === selectedSessionId);
   if (!session) return;
-  const payment = buildPaymentDetails(session);
+  const payment = currentPaymentFor(session);
 
   try {
     await navigator.clipboard.writeText(payment.summary);
