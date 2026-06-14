@@ -198,6 +198,7 @@ router.post('/', requireAuth, async (req, res) => {
         capturedAt,
         lat: latitude,
         lng: longitude,
+        challengeTag,
     });
 
     const capturedAtLabel = capturedAt

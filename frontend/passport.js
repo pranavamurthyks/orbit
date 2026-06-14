@@ -51,9 +51,13 @@ function renderEntries(entries) {
         <span class="chip">${esc(entry.type)}</span>
         <span class="chip">${esc(entry.locationName || 'SkyFolk field log')}</span>
         <span class="chip">${entry.verified ? 'Verified' : 'Unverified'}</span>
+        <span class="chip">${esc(entry.verificationTier || 'unverified')}</span>
         <span class="chip">+${entry.stardustAwarded} Stardust</span>
       </div>
       <p>${esc(entry.verificationSummary || entry.notes || 'Observation saved to your Cosmic Passport.')}</p>
+      ${Array.isArray(entry.verificationChecks) && entry.verificationChecks.length
+        ? `<div class="entry-checks">${entry.verificationChecks.slice(0, 2).map(check => `<span>${esc(check)}</span>`).join('')}</div>`
+        : ''}
       <span>${esc(entry.observedAtLabel || '')}</span>
     </article>
   `).join('');
@@ -164,7 +168,9 @@ form.addEventListener('submit', async event => {
     converterInput.value = '180';
     setDefaultObservedAt();
     await loadPassport();
-    const checks = Array.isArray(result.checks) && result.checks.length ? ` ${result.checks[0]}` : '';
+    const checks = Array.isArray(result.checks) && result.checks.length
+      ? ` ${result.checks.slice(0, 2).join(' ')}`
+      : '';
     setStatus(`${result.entry.verificationSummary}${checks}`);
   } catch (error) {
     setStatus(error.message);

@@ -65,9 +65,18 @@ const passportEntrySchema = new mongoose.Schema(
             default: '',
             trim: true,
         },
+        verificationTier: {
+            type: String,
+            default: 'unverified',
+            trim: true,
+        },
         verificationScore: {
             type: Number,
             default: 0,
+        },
+        verificationChecks: {
+            type: [String],
+            default: [],
         },
     },
     { timestamps: true }

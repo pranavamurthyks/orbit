@@ -23,7 +23,9 @@ router.get('/', requireAuth, async (req, res) => {
             observedAtLabel: entry.observedAtLabel,
             proofPhotoId: entry.proofPhotoId ? entry.proofPhotoId.toString() : null,
             verificationSummary: entry.verificationSummary || '',
+            verificationTier: entry.verificationTier || 'unverified',
             verificationScore: Number(entry.verificationScore || 0),
+            verificationChecks: Array.isArray(entry.verificationChecks) ? entry.verificationChecks : [],
             createdAt: entry.createdAt,
         })),
     });
@@ -80,7 +82,9 @@ router.post('/', requireAuth, async (req, res) => {
         verified: verification.verified,
         stardustAwarded: verification.stardustAwarded,
         verificationSummary: verification.verificationSummary,
+        verificationTier: verification.verificationTier,
         verificationScore: verification.verificationScore,
+        verificationChecks: verification.checks,
     });
 
     if (entry.stardustAwarded > 0) {
@@ -97,6 +101,7 @@ router.post('/', requireAuth, async (req, res) => {
             verified: entry.verified,
             stardustAwarded: entry.stardustAwarded,
             verificationSummary: entry.verificationSummary,
+            verificationTier: entry.verificationTier,
             verificationScore: entry.verificationScore,
         },
         balance: req.user.stardustBalance,
