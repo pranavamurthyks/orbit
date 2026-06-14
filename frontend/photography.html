@@ -5,6 +5,12 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>SkyFolk - Space Photography</title>
   <link rel="stylesheet" href="photography.css" />
+  <link
+    rel="stylesheet"
+    href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+    integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY="
+    crossorigin=""
+  />
 </head>
 <body>
 
@@ -90,6 +96,35 @@
       <strong id="favoriteSummary">Loading gallery momentum...</strong>
       <p>Photos that attract meaningful Stardust support unlock visible recognition in the gallery.</p>
     </article>
+  </section>
+
+  <section class="darksky-explorer">
+    <div class="explorer-card map-card">
+      <div class="explorer-head">
+        <div>
+          <span class="community-label">Crowdsourced explorer</span>
+          <strong>Dark-sky spots from real uploads</strong>
+        </div>
+        <span class="explorer-chip" id="mapSpotCount">0 mapped spots</span>
+      </div>
+      <div id="darkSkyMap" class="darksky-map" aria-label="Dark-sky community map"></div>
+    </div>
+    <div class="explorer-card detail-card">
+      <div class="explorer-head">
+        <div>
+          <span class="community-label">Spot detail</span>
+          <strong id="spotDetailTitle">Choose a spot</strong>
+        </div>
+        <span class="explorer-chip" id="spotDetailConfidence">Waiting</span>
+      </div>
+      <p class="spot-detail-copy" id="spotDetailCopy">Select a marker or one of the ranked locations to inspect the crowd evidence behind that site.</p>
+      <div class="spot-detail-grid" id="spotDetailGrid">
+        <div class="spot-detail-stat"><span>Dark-sky score</span><strong>-</strong></div>
+        <div class="spot-detail-stat"><span>Submissions</span><strong>-</strong></div>
+        <div class="spot-detail-stat"><span>Proof-rich shots</span><strong>-</strong></div>
+        <div class="spot-detail-stat"><span>Recent uploads</span><strong>-</strong></div>
+      </div>
+    </div>
   </section>
 
   <!-- Filter bar -->
@@ -245,6 +280,11 @@
 
   <script src="api.js"></script>
   <script src="ui-effects.js"></script>
+  <script
+    src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+    integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo="
+    crossorigin=""
+  ></script>
   <script src="https://cdn.jsdelivr.net/npm/exifr/dist/lite.umd.js"></script>
   <script src="photography.js"></script>
   <script src="session.js"></script>

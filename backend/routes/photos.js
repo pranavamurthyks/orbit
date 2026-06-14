@@ -8,9 +8,48 @@ const { parseObservedAt, buildPhotoVerificationHints } = require('../services/ob
 
 const router = express.Router();
 const DEFAULT_SPOTS = [
-    { name: 'Hanle, Ladakh', submissions: 12, stardust: 860, avgDarkSky: 91 },
-    { name: 'Coorg Ridge', submissions: 8, stardust: 510, avgDarkSky: 76 },
-    { name: 'Jaisalmer Dunes', submissions: 6, stardust: 390, avgDarkSky: 82 },
+    {
+        name: 'Hanle, Ladakh',
+        submissions: 12,
+        stardust: 860,
+        avgDarkSky: 91,
+        lat: 32.7795,
+        lng: 78.9644,
+        topCategory: 'galaxy',
+        proofSubmissions: 8,
+        communitySubmissions: 12,
+        recentSubmissions: 3,
+        confidence: 'high',
+        lastCaptureLabel: 'Recent community night',
+    },
+    {
+        name: 'Coorg Ridge',
+        submissions: 8,
+        stardust: 510,
+        avgDarkSky: 76,
+        lat: 12.4244,
+        lng: 75.7382,
+        topCategory: 'moon',
+        proofSubmissions: 5,
+        communitySubmissions: 8,
+        recentSubmissions: 2,
+        confidence: 'medium',
+        lastCaptureLabel: 'Recent community night',
+    },
+    {
+        name: 'Jaisalmer Dunes',
+        submissions: 6,
+        stardust: 390,
+        avgDarkSky: 82,
+        lat: 26.9157,
+        lng: 70.9083,
+        topCategory: 'milky-way',
+        proofSubmissions: 4,
+        communitySubmissions: 6,
+        recentSubmissions: 1,
+        confidence: 'medium',
+        lastCaptureLabel: 'Recent community night',
+    },
 ];
 
 function initialsFor(name) {
@@ -72,6 +111,7 @@ function buildWeeklyChallenge() {
 function buildDarkSkySpots(photos) {
     const geoClusters = [];
     const namedCounts = new Map();
+    const recentCutoff = Date.now() - 90 * 24 * 60 * 60 * 1000;
 
     photos.forEach(photo => {
         const lat = typeof photo.location?.lat === 'number' ? photo.location.lat : null;
@@ -80,6 +120,18 @@ function buildDarkSkySpots(photos) {
         const stardust = Number(photo.stardustTotal || 0);
         const darkSkyScore = Number(photo.darkSkyScore || 0);
         const category = String(photo.category || '').trim();
+        const capturedAt = photo.capturedAt ? new Date(photo.capturedAt) : null;
+        const capturedAtMs = capturedAt && !Number.isNaN(capturedAt.getTime())
+            ? capturedAt.getTime()
+            : (photo.createdAt ? new Date(photo.createdAt).getTime() : 0);
+        const hasProof = Boolean(
+            capturedAtMs &&
+            lat !== null &&
+            lng !== null &&
+            darkSkyScore > 0
+        );
+        const isRecent = capturedAtMs >= recentCutoff;
+        const sourceType = String(photo.sourceType || '').trim();
 
         if (lat !== null && lng !== null) {
             let cluster = geoClusters.find(item => distanceKm(lat, lng, item.lat, item.lng) <= 75);
@@ -92,6 +144,10 @@ function buildDarkSkySpots(photos) {
                     darkSkyTotal: 0,
                     nameCounts: new Map(),
                     categoryCounts: new Map(),
+                    proofSubmissions: 0,
+                    communitySubmissions: 0,
+                    recentSubmissions: 0,
+                    lastCaptureMs: 0,
                 };
                 geoClusters.push(cluster);
             }
@@ -107,16 +163,51 @@ function buildDarkSkySpots(photos) {
             if (category) {
                 cluster.categoryCounts.set(category, (cluster.categoryCounts.get(category) || 0) + 1);
             }
+            if (hasProof) {
+                cluster.proofSubmissions += 1;
+            }
+            if (sourceType === 'community') {
+                cluster.communitySubmissions += 1;
+            }
+            if (isRecent) {
+                cluster.recentSubmissions += 1;
+            }
+            cluster.lastCaptureMs = Math.max(cluster.lastCaptureMs, capturedAtMs || 0);
             return;
         }
 
         if (!locationName) return;
-        const existing = namedCounts.get(locationName) || { name: locationName, submissions: 0, stardust: 0, darkSkyTotal: 0 };
+        const existing = namedCounts.get(locationName) || {
+            name: locationName,
+            submissions: 0,
+            stardust: 0,
+            darkSkyTotal: 0,
+            proofSubmissions: 0,
+            communitySubmissions: 0,
+            recentSubmissions: 0,
+            lastCaptureMs: 0,
+        };
         existing.submissions += 1;
         existing.stardust += stardust;
         existing.darkSkyTotal += darkSkyScore;
+        if (capturedAtMs && darkSkyScore > 0) {
+            existing.proofSubmissions += 1;
+        }
+        if (sourceType === 'community') {
+            existing.communitySubmissions += 1;
+        }
+        if (isRecent) {
+            existing.recentSubmissions += 1;
+        }
+        existing.lastCaptureMs = Math.max(existing.lastCaptureMs, capturedAtMs || 0);
         namedCounts.set(locationName, existing);
     });
+
+    function confidenceFor(spot) {
+        if (spot.submissions >= 4 && spot.proofSubmissions >= 2) return 'high';
+        if (spot.submissions >= 2 || spot.proofSubmissions >= 1) return 'medium';
+        return 'emerging';
+    }
 
     const geoRanked = geoClusters.map((spot) => {
         const topName = Array.from(spot.nameCounts.entries()).sort((a, b) => b[1] - a[1])[0]?.[0];
@@ -129,6 +220,13 @@ function buildDarkSkySpots(photos) {
             lat: Number(spot.lat.toFixed(4)),
             lng: Number(spot.lng.toFixed(4)),
             topCategory,
+            proofSubmissions: spot.proofSubmissions,
+            communitySubmissions: spot.communitySubmissions,
+            recentSubmissions: spot.recentSubmissions,
+            confidence: confidenceFor(spot),
+            lastCaptureLabel: spot.lastCaptureMs
+                ? new Date(spot.lastCaptureMs).toLocaleDateString('en-IN', { dateStyle: 'medium' })
+                : '',
         };
     });
 
@@ -141,11 +239,17 @@ function buildDarkSkySpots(photos) {
             lat: null,
             lng: null,
             topCategory: '',
+            proofSubmissions: spot.proofSubmissions,
+            communitySubmissions: spot.communitySubmissions,
+            recentSubmissions: spot.recentSubmissions,
+            confidence: confidenceFor(spot),
+            lastCaptureLabel: spot.lastCaptureMs
+                ? new Date(spot.lastCaptureMs).toLocaleDateString('en-IN', { dateStyle: 'medium' })
+                : '',
         }));
 
     const ranked = [...geoRanked, ...namedRanked]
-        .sort((a, b) => b.avgDarkSky - a.avgDarkSky || b.stardust - a.stardust || b.submissions - a.submissions)
-        .slice(0, 3);
+        .sort((a, b) => b.avgDarkSky - a.avgDarkSky || b.stardust - a.stardust || b.submissions - a.submissions);
 
     if (!ranked.some(spot => spot.avgDarkSky > 0)) {
         return DEFAULT_SPOTS;

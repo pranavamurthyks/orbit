@@ -344,6 +344,9 @@ let communityMeta = {
   darkSkySpots: [],
   communityFavoriteCount: 0,
 };
+let darkSkyMap = null;
+let darkSkyMarkers = [];
+let activeSpotName = null;
 const categoryLabels = {
   nebula: 'Nebula',
   planet: 'Planet',
@@ -428,28 +431,155 @@ function updateStats() {
   document.getElementById('favoriteCount').textContent = communityMeta.communityFavoriteCount || 0;
 }
 
+function spotConfidenceLabel(confidence) {
+  return {
+    high: 'High confidence',
+    medium: 'Growing evidence',
+    emerging: 'Emerging signal',
+  }[confidence] || 'Community signal';
+}
+
+function updateSpotDetail(spot) {
+  const title = document.getElementById('spotDetailTitle');
+  const confidence = document.getElementById('spotDetailConfidence');
+  const copy = document.getElementById('spotDetailCopy');
+  const grid = document.getElementById('spotDetailGrid');
+
+  if (!spot) {
+    title.textContent = 'Choose a spot';
+    confidence.textContent = 'Waiting';
+    copy.textContent = 'Select a marker or one of the ranked locations to inspect the crowd evidence behind that site.';
+    grid.innerHTML = `
+      <div class="spot-detail-stat"><span>Dark-sky score</span><strong>-</strong></div>
+      <div class="spot-detail-stat"><span>Submissions</span><strong>-</strong></div>
+      <div class="spot-detail-stat"><span>Proof-rich shots</span><strong>-</strong></div>
+      <div class="spot-detail-stat"><span>Recent uploads</span><strong>-</strong></div>
+    `;
+    return;
+  }
+
+  title.textContent = spot.name;
+  confidence.textContent = spotConfidenceLabel(spot.confidence);
+  copy.textContent = `${spot.submissions} uploads have clustered here, with ${spot.proofSubmissions || 0} proof-rich captures and ${spot.recentSubmissions || 0} recent submissions.${spot.lastCaptureLabel ? ` Latest evidence: ${spot.lastCaptureLabel}.` : ''}`;
+  grid.innerHTML = `
+    <div class="spot-detail-stat"><span>Dark-sky score</span><strong>${spot.avgDarkSky || 0}/100</strong></div>
+    <div class="spot-detail-stat"><span>Submissions</span><strong>${spot.submissions}</strong></div>
+    <div class="spot-detail-stat"><span>Proof-rich shots</span><strong>${spot.proofSubmissions || 0}</strong></div>
+    <div class="spot-detail-stat"><span>Recent uploads</span><strong>${spot.recentSubmissions || 0}</strong></div>
+  `;
+}
+
+function ensureDarkSkyMap() {
+  if (darkSkyMap || !window.L) return;
+
+  darkSkyMap = window.L.map('darkSkyMap', {
+    zoomControl: true,
+    scrollWheelZoom: false,
+  }).setView([22.5, 79], 4);
+
+  window.L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    maxZoom: 18,
+    attribution: '&copy; OpenStreetMap contributors',
+  }).addTo(darkSkyMap);
+}
+
+function focusDarkSkySpot(name) {
+  activeSpotName = name;
+  const spots = Array.isArray(communityMeta.darkSkySpots) ? communityMeta.darkSkySpots : [];
+  const spot = spots.find(item => item.name === name) || null;
+  updateSpotDetail(spot);
+  renderCommunityMeta();
+
+  if (spot && darkSkyMap && spot.lat !== null && spot.lng !== null) {
+    darkSkyMap.flyTo([spot.lat, spot.lng], Math.max(darkSkyMap.getZoom(), 6), { duration: 0.8 });
+    const marker = darkSkyMarkers.find(item => item.name === name);
+    if (marker) marker.leaflet.openPopup();
+  }
+}
+
+function renderDarkSkyMap() {
+  ensureDarkSkyMap();
+  if (!darkSkyMap) return;
+
+  darkSkyMarkers.forEach(item => item.leaflet.remove());
+  darkSkyMarkers = [];
+
+  const spots = (Array.isArray(communityMeta.darkSkySpots) ? communityMeta.darkSkySpots : [])
+    .filter(spot => spot.lat !== null && spot.lng !== null);
+
+  if (!spots.length) {
+    updateSpotDetail(null);
+    return;
+  }
+
+  const bounds = [];
+  spots.forEach((spot) => {
+    const radius = Math.max(8, Math.min(22, Number(spot.avgDarkSky || 0) / 5));
+    const marker = window.L.circleMarker([spot.lat, spot.lng], {
+      radius,
+      color: spot.avgDarkSky >= 80 ? '#f0a060' : spot.avgDarkSky >= 60 ? '#aec0ff' : '#6ee7d8',
+      weight: 1.5,
+      fillColor: spot.avgDarkSky >= 80 ? '#f0a060' : spot.avgDarkSky >= 60 ? '#6887ff' : '#6ee7d8',
+      fillOpacity: 0.32,
+    }).addTo(darkSkyMap);
+
+    marker.bindPopup(`
+      <div class="darksky-popup">
+        <strong>${spot.name}</strong>
+        <span>dark-sky ${spot.avgDarkSky || 0}/100 · ${spot.submissions} uploads</span>
+        <span>${spot.topCategory ? `top category: ${formatCategory(spot.topCategory)} · ` : ''}${spot.lastCaptureLabel || 'community evidence'}</span>
+      </div>
+    `);
+    marker.on('click', () => focusDarkSkySpot(spot.name));
+
+    darkSkyMarkers.push({
+      name: spot.name,
+      leaflet: marker,
+    });
+    bounds.push([spot.lat, spot.lng]);
+  });
+
+  if (bounds.length === 1) {
+    darkSkyMap.setView(bounds[0], 6);
+  } else {
+    darkSkyMap.fitBounds(bounds, { padding: [28, 28] });
+  }
+  window.setTimeout(() => darkSkyMap.invalidateSize(), 0);
+
+  if (!activeSpotName && spots[0]) {
+    activeSpotName = spots[0].name;
+  }
+  updateSpotDetail(spots.find(spot => spot.name === activeSpotName) || spots[0]);
+}
+
 function renderCommunityMeta() {
   const challenge = communityMeta.weeklyChallenge;
   const spots = Array.isArray(communityMeta.darkSkySpots) ? communityMeta.darkSkySpots : [];
+  const topSpots = spots.slice(0, 3);
 
   document.getElementById('challengeTitle').textContent = challenge?.title || 'Community challenge';
   document.getElementById('challengePrompt').textContent = challenge?.prompt || 'Upload a real-sky moment connected to this week’s observing theme.';
   document.getElementById('favoriteSummary').textContent =
     `${communityMeta.communityFavoriteCount || 0} gallery shots have crossed the community-favorite threshold.`;
+  document.getElementById('mapSpotCount').textContent = `${spots.filter(spot => spot.lat !== null && spot.lng !== null).length} mapped spots`;
 
   const spotList = document.getElementById('spotList');
-  if (!spots.length) {
+  if (!topSpots.length) {
     spotList.innerHTML = '<span>No location data yet. Upload from your next dark-sky trip.</span>';
     return;
   }
 
-  spotList.innerHTML = spots.map(spot => `
-    <div class="spot-item">
+  spotList.innerHTML = topSpots.map(spot => `
+    <button class="spot-item${activeSpotName === spot.name ? ' active' : ''}" type="button" data-spot-name="${spot.name}">
       <strong>${spot.name}</strong>
-      <span>${spot.submissions} shots · ${spot.stardust} ✦ · dark-sky ${spot.avgDarkSky || 0}/100</span>
-      <span>${spot.lat !== null && spot.lng !== null ? `${Number(spot.lat).toFixed(2)}, ${Number(spot.lng).toFixed(2)}` : 'Location label only'}${spot.topCategory ? ` · ${formatCategory(spot.topCategory)}` : ''}</span>
-    </div>
+      <span class="spot-meta">${spot.submissions} shots · ${spot.stardust} ✦ · dark-sky ${spot.avgDarkSky || 0}/100</span>
+      <span class="spot-meta">${spot.lat !== null && spot.lng !== null ? `${Number(spot.lat).toFixed(2)}, ${Number(spot.lng).toFixed(2)}` : 'Location label only'}${spot.topCategory ? ` · ${formatCategory(spot.topCategory)}` : ''}</span>
+    </button>
   `).join('');
+
+  spotList.querySelectorAll('[data-spot-name]').forEach(button => {
+    button.addEventListener('click', () => focusDarkSkySpot(button.dataset.spotName));
+  });
 }
 
 function renderGrid() {
@@ -458,6 +588,7 @@ function renderGrid() {
   grid.innerHTML = '';
   updateStats();
   renderCommunityMeta();
+  renderDarkSkyMap();
 
   if (list.length === 0) {
     grid.innerHTML = '<div style="color:rgba(180,190,230,0.4);font-size:14px;padding:48px;text-align:center;grid-column:1/-1;">No photos in this category yet. Be the first to upload!</div>';
