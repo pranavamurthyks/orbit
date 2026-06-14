@@ -3,7 +3,7 @@
   const TOKEN_KEY = 'orbitAuthToken';
   const page = location.pathname.split('/').pop() || 'index.html';
   const API_BASE = localStorage.getItem('orbitApiBase') ||
-    (window.location.protocol === 'file:' ? 'http://127.0.0.1:3000/api' : `${window.location.origin}/api`);
+    ('https://orbit-fkec.onrender.com/api') ;
   const PUBLIC_PAGES = new Set([
     'index.html',
     'loading.html',

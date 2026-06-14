@@ -993,7 +993,7 @@
 <script src="login.js"></script>
 <script>
   const DASHBOARD_API_BASE = localStorage.getItem('orbitApiBase') ||
-    (window.location.protocol === 'file:' ? 'http://127.0.0.1:3000/api' : `${window.location.origin}/api`);
+    ('https://orbit-fkec.onrender.com/api');
   const SESSION_STORAGE_KEY = 'orbitCurrentUser';
   const TOKEN_STORAGE_KEY = 'orbitAuthToken';
   const STATIC_PROGRAMMES = [
