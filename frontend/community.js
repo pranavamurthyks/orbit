@@ -39,11 +39,16 @@ const contributionAmount = document.getElementById('contributionAmount');
 const paymentLink = document.getElementById('paymentLink');
 const crewList = document.getElementById('crewList');
 const crewCount = document.getElementById('crewCount');
+const hostActions = document.getElementById('hostActions');
+const summaryBtn = document.getElementById('summaryBtn');
+const cancelBtn = document.getElementById('cancelBtn');
+const fundingSummary = document.getElementById('fundingSummary');
+const api = window.SkyFolkApi;
 
 let selectedFundingOption = null;
 let selectedSessionId = null;
 let toastTimer = null;
-let myStardust = 1240;
+let myStardust = getInitialStardust();
 let W = 0;
 let H = 0;
 let stars = [];
@@ -65,53 +70,7 @@ const CONSTELLATIONS = [
 const progressFields = Array.from(document.querySelectorAll('[data-progress-field]'));
 const formSteps = Array.from(document.querySelectorAll('.form-step'));
 
-const demoSessions = [
-  {
-    id: 1,
-    title: 'Moonrise Watch',
-    place: 'East Ridge Field',
-    time: 'Tonight, 8:30 PM',
-    seats: '12 spots',
-    cost: 35,
-    fundingGoal: 600,
-    fundingRaised: 240,
-    desc: 'A relaxed telescope meetup for lunar viewing and beginner photography.',
-    participants: [
-      { name: 'Mira', initials: 'MI', bringing: 'Dobsonian telescope' },
-      { name: 'Dev', initials: 'DV', bringing: 'Tripod and moon filter' },
-    ],
-  },
-  {
-    id: 2,
-    title: 'Meteor Shower Hangout',
-    place: 'North Lake Deck',
-    time: 'Saturday, 11:00 PM',
-    seats: '8 spots',
-    cost: 50,
-    fundingGoal: 850,
-    fundingRaised: 390,
-    desc: 'Bring a blanket. We will track the radiant and compare sightings.',
-    participants: [
-      { name: 'Isha', initials: 'IS', bringing: 'Blankets and warm tea' },
-      { name: 'Rohit', initials: 'RH', bringing: 'Red flashlights' },
-    ],
-  },
-  {
-    id: 3,
-    title: 'Deep Sky Basics',
-    place: 'Riverside Dark Spot',
-    time: 'Sunday, 7:15 PM',
-    seats: '5 spots',
-    cost: 70,
-    fundingGoal: 1200,
-    fundingRaised: 760,
-    desc: 'Small-group session for finding nebulae, clusters, and galaxies.',
-    participants: [
-      { name: 'Nora', initials: 'NO', bringing: 'Star atlas' },
-      { name: 'Cal', initials: 'CA', bringing: 'Portable power bank' },
-    ],
-  },
-];
+let demoSessions = [];
 
 function resizeStars() {
   W = canvas.width = window.innerWidth;
@@ -183,7 +142,7 @@ function showRoute(route, shouldUpdateHash = true) {
     history.pushState({ route: safeRoute }, '', `${location.pathname}${nextHash}`);
   }
 
-  if (safeRoute === 'participant' && selectedSessionId === null) {
+  if (safeRoute === 'participant' && selectedSessionId === null && demoSessions.length > 0) {
     selectSession(demoSessions[0].id);
   }
 
@@ -348,12 +307,14 @@ function renderSessions() {
 }
 
 function selectSession(sessionId) {
-  selectedSessionId = sessionId;
-  const session = demoSessions.find(item => item.id === sessionId);
+  selectedSessionId = String(sessionId);
+  const session = demoSessions.find(item => String(item.id) === selectedSessionId);
   if (!session) return;
+  const currentUser = api.getUser();
+  const isHost = Boolean(currentUser?.id && session.hostUserId === currentUser.id);
 
   document.querySelectorAll('.session-card').forEach(card => {
-    card.classList.toggle('selected', Number(card.dataset.sessionId) === sessionId);
+    card.classList.toggle('selected', card.dataset.sessionId === selectedSessionId);
   });
 
   sessionEmpty.classList.add('hidden');
@@ -366,10 +327,20 @@ function selectSession(sessionId) {
     <span>${escapeHtml(session.time)}</span>
     <span>${escapeHtml(session.seats)}</span>
     <span>${session.participants.length} participants</span>
-    <span>${session.fundingRaised}/${session.fundingGoal} funding</span>
+    <span>${session.status || 'scheduled'}</span>
+    <span>${session.fundingRaised}/${session.fundingGoal} ${escapeHtml(session.fundingCurrency || 'INR')} funding</span>
   `;
   contributionAmount.value = '';
   bringingInput.value = '';
+  joinForm.classList.toggle('hidden', session.status === 'cancelled');
+  hostActions.classList.toggle('hidden', !isHost);
+  if (session.spendSummary) {
+    fundingSummary.textContent = session.spendSummary;
+    fundingSummary.classList.remove('hidden');
+  } else {
+    fundingSummary.textContent = '';
+    fundingSummary.classList.add('hidden');
+  }
   renderCrew(session);
 }
 
@@ -451,7 +422,7 @@ document.querySelectorAll('.funding-option').forEach(option => {
   });
 });
 
-hostForm.addEventListener('submit', event => {
+hostForm.addEventListener('submit', async event => {
   event.preventDefault();
 
   if (fundingToggle.checked && !selectedFundingOption) {
@@ -459,34 +430,24 @@ hostForm.addEventListener('submit', event => {
     return;
   }
 
-  const payload = collectHostPayload();
-  const nextId = demoSessions.length + 1;
+  try {
+    const payload = collectHostPayload();
+    const result = await api.post('/sessions', payload);
+    demoSessions.unshift(result.session);
 
-  demoSessions.unshift({
-    id: nextId,
-    title: payload.title || 'Untitled skywatch',
-    place: payload.location.name || 'Location pending',
-    time: payload.date && payload.time ? `${payload.date}, ${payload.time}` : 'Time pending',
-    seats: payload.capacity ? `${payload.capacity} spots` : 'Open spots',
-    cost: 25,
-    fundingGoal: Number(payload.funding.goal) || 500,
-    fundingRaised: 0,
-    desc: payload.description || 'New Orbit community session.',
-    participants: [
-      { name: 'Cosmic Guest', initials: 'CG', bringing: 'Host kit' },
-    ],
-  });
-
-  renderSessions();
-  showToast('Session initiated and added to available sessions');
-  showRoute('participant');
-  selectSession(nextId);
+    renderSessions();
+    showToast('Session initiated and added to available sessions');
+    showRoute('participant');
+    selectSession(result.session.id);
+  } catch (error) {
+    showToast(error.message);
+  }
 });
 
-joinForm.addEventListener('submit', event => {
+joinForm.addEventListener('submit', async event => {
   event.preventDefault();
 
-  const session = demoSessions.find(item => item.id === selectedSessionId);
+  const session = demoSessions.find(item => String(item.id) === selectedSessionId);
   if (!session) return;
 
   if (myStardust < session.cost) {
@@ -501,18 +462,62 @@ joinForm.addEventListener('submit', event => {
   }
 
   const contribution = Math.max(0, Math.floor(Number(contributionAmount.value) || 0));
-  myStardust -= session.cost;
-  session.fundingRaised += contribution;
-  session.participants.push({
-    name: 'Cosmic Guest',
-    initials: 'CG',
-    bringing: `${bringing}${contribution ? `, ${contribution} via ${paymentLink.value}` : ''}`,
-  });
+  try {
+    const result = await api.post(`/sessions/${session.id}/join`, {
+      bringing,
+      contributionAmount: contribution,
+      contributionMethod: paymentLink.value,
+    });
 
-  updateStardust();
-  renderSessions();
-  selectSession(session.id);
-  showToast(`Joined "${session.title}" for ${session.cost} Stardust`);
+    myStardust = result.balance;
+    updateLocalBalance(result.balance);
+    const nextSession = result.session;
+    demoSessions = demoSessions.map(item => item.id === nextSession.id ? nextSession : item);
+
+    updateStardust();
+    renderSessions();
+    selectSession(nextSession.id);
+    showToast(`Joined "${nextSession.title}" for ${nextSession.cost} Stardust`);
+  } catch (error) {
+    showToast(error.message);
+  }
+});
+
+summaryBtn.addEventListener('click', async () => {
+  const session = demoSessions.find(item => String(item.id) === selectedSessionId);
+  if (!session) return;
+
+  const summary = window.prompt('Post a short spend summary for contributors:', session.spendSummary || 'Snacks, chai, and shared telescope accessories for the meetup.');
+  if (summary === null) return;
+
+  try {
+    const result = await api.post(`/sessions/${session.id}/spend-summary`, { summary });
+    demoSessions = demoSessions.map(item => String(item.id) === String(result.session.id) ? result.session : item);
+    renderSessions();
+    selectSession(result.session.id);
+    showToast('Funding summary published');
+  } catch (error) {
+    showToast(error.message);
+  }
+});
+
+cancelBtn.addEventListener('click', async () => {
+  const session = demoSessions.find(item => String(item.id) === selectedSessionId);
+  if (!session) return;
+
+  if (!window.confirm(`Cancel "${session.title}" and trigger the refund message?`)) {
+    return;
+  }
+
+  try {
+    const result = await api.post(`/sessions/${session.id}/cancel`, {});
+    demoSessions = demoSessions.map(item => String(item.id) === String(result.session.id) ? result.session : item);
+    renderSessions();
+    selectSession(result.session.id);
+    showToast('Session cancelled');
+  } catch (error) {
+    showToast(error.message);
+  }
 });
 
 function closeProfileMenu() {
@@ -547,7 +552,7 @@ document.addEventListener('keydown', event => {
   if (event.key === 'Escape') closeProfileMenu();
 });
 
-renderSessions();
+loadSessions();
 showRoute(routeFromHash(), false);
 updateStardust();
 window.addEventListener('resize', () => {
@@ -556,3 +561,32 @@ window.addEventListener('resize', () => {
 });
 resizeStars();
 drawStars();
+function getInitialStardust() {
+  try {
+    const user = JSON.parse(localStorage.getItem('orbitCurrentUser') || 'null');
+    return Number(user?.stardustBalance ?? 1240);
+  } catch {
+    return 1240;
+  }
+}
+
+async function loadSessions() {
+  try {
+    const result = await api.get('/sessions');
+    demoSessions = result.sessions;
+  } catch (error) {
+    console.error(error);
+  }
+
+  renderSessions();
+  if (demoSessions.length > 0 && selectedSessionId === null) {
+    selectSession(demoSessions[0].id);
+  }
+}
+
+function updateLocalBalance(balance) {
+  const user = api.getUser();
+  if (!user) return;
+  user.stardustBalance = balance;
+  api.setUser(user);
+}

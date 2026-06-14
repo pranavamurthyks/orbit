@@ -5,7 +5,6 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Space Dashboard — Live Feed</title>
   <link rel="stylesheet" href="login.css" />
-  <link rel="stylesheet" href="orbit-ai.css" />
   <style>
     :root {
       --bg:        #020510;
@@ -335,11 +334,6 @@
         inset 0 1px 0 rgba(255,255,255,0.08);
     }
 
-    .dashboard-shell > .orbit-ai-pagebar {
-      width: auto;
-      margin: 16px 36px 0;
-    }
-
     /* ── header ── */
     .header {
       padding: 32px 36px 24px;
@@ -411,8 +405,107 @@
     .filter-btn:hover { border-color: rgba(150, 180, 255, 0.42); color: #dde4ff; }
     .filter-btn.active { background: rgba(115, 135, 235, 0.24); border-color: rgba(135, 164, 255, 0.42); color: #dde4ff; }
 
-    /* ── main grid ── */
-    .content { padding: 24px 36px 38px; }
+    .overview-strip {
+      padding: 24px 36px 8px;
+      display: grid;
+      gap: 16px;
+      border-bottom: 1px solid rgba(150, 170, 255, 0.16);
+    }
+
+    .location-prompt {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 16px;
+      padding: 18px 20px;
+      border: 1px solid rgba(150, 170, 255, 0.16);
+      border-radius: 14px;
+      background:
+        linear-gradient(180deg, rgba(8, 11, 31, 0.48), rgba(5, 8, 25, 0.28)),
+        rgba(255, 255, 255, 0.03);
+    }
+
+    .location-copy h2 {
+      color: var(--text);
+      font-size: 1rem;
+      font-weight: 600;
+    }
+
+    .location-copy p {
+      margin-top: 6px;
+      color: var(--text-dim);
+      font-size: 0.82rem;
+      line-height: 1.6;
+      max-width: 58ch;
+    }
+
+    .location-action {
+      min-width: 164px;
+      justify-content: center;
+    }
+
+    .feature-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 14px;
+    }
+
+    .feature-card {
+      display: grid;
+      gap: 10px;
+      padding: 18px;
+      border-radius: 14px;
+      border: 1px solid rgba(150, 170, 255, 0.16);
+      background:
+        linear-gradient(180deg, rgba(8, 11, 31, 0.46), rgba(5, 8, 25, 0.30)),
+        rgba(255, 255, 255, 0.03);
+      box-shadow: inset 0 1px 0 rgba(255,255,255,0.05);
+    }
+
+    .feature-card strong {
+      color: var(--text);
+      font-size: 0.95rem;
+      font-weight: 600;
+    }
+
+    .feature-value {
+      color: var(--accent);
+      font-family: var(--mono);
+      font-size: 1.05rem;
+      line-height: 1.35;
+    }
+
+    .feature-detail {
+      color: var(--text-dim);
+      font-size: 0.76rem;
+      line-height: 1.6;
+    }
+
+    .feature-link {
+      color: #dde4ff;
+      font-family: var(--mono);
+      font-size: 0.68rem;
+      letter-spacing: 0.08em;
+      text-decoration: none;
+      text-transform: uppercase;
+    }
+
+    .feature-link:hover {
+      color: var(--accent);
+    }
+
+    /* ── main dashboard layout ── */
+    .content {
+      padding: 24px 36px 38px;
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) minmax(280px, 340px);
+      gap: 20px;
+      align-items: start;
+    }
+
+    .dashboard-events {
+      min-width: 0;
+    }
 
     .status-bar {
       font-family: var(--mono);
@@ -431,6 +524,71 @@
       display: grid;
       grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
       gap: 1rem;
+      justify-content: center;
+    }
+
+    .dashboard-aside {
+      display: grid;
+      gap: 12px;
+      position: sticky;
+      top: 84px;
+    }
+
+    .aside-card {
+      background:
+        linear-gradient(180deg, rgba(8, 11, 31, 0.50), rgba(5, 8, 25, 0.32)),
+        rgba(255, 255, 255, 0.035);
+      border: 1px solid rgba(150, 170, 255, 0.16);
+      border-radius: 12px;
+      padding: 16px;
+      box-shadow: inset 0 1px 0 rgba(255,255,255,0.06);
+    }
+
+    .aside-card h2 {
+      color: var(--text);
+      font-size: 0.86rem;
+      font-weight: 600;
+      margin-bottom: 10px;
+    }
+
+    .aside-kicker {
+      display: block;
+      margin-bottom: 5px;
+      font-family: var(--mono);
+      font-size: 0.62rem;
+      color: var(--accent);
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+    }
+
+    .aside-value {
+      color: var(--text);
+      font-family: var(--mono);
+      font-size: 0.76rem;
+      line-height: 1.6;
+      word-break: break-word;
+    }
+
+    .aside-muted,
+    .aside-card li {
+      color: var(--text-dim);
+      font-size: 0.76rem;
+      line-height: 1.55;
+    }
+
+    .aside-card ul {
+      display: grid;
+      gap: 7px;
+      list-style: none;
+    }
+
+    .aside-card a {
+      color: var(--accent);
+      text-decoration: none;
+    }
+
+    .aside-card a:hover {
+      color: #dde4ff;
     }
 
     /* ── skeleton loader ── */
@@ -646,13 +804,12 @@
         margin-top: 20px;
       }
 
-      .dashboard-shell > .orbit-ai-pagebar {
-        margin-left: 1rem;
-        margin-right: 1rem;
-      }
-
-      .header, .filters, .content, .page-footer { padding-left: 1rem; padding-right: 1rem; }
+      .header, .filters, .overview-strip, .content, .page-footer { padding-left: 1rem; padding-right: 1rem; }
+      .content { grid-template-columns: 1fr; }
       .cards-grid { grid-template-columns: 1fr; }
+      .dashboard-aside { position: static; }
+      .location-prompt { flex-direction: column; }
+      .location-action { width: 100%; }
     }
 
     @media (pointer: coarse) {
@@ -672,7 +829,7 @@
 </div>
 
 <nav class="navbar">
-  <a class="nav-logo" href="index.html">✦ Orbit</a>
+  <a class="nav-logo" href="index.html">✦ SkyFolk</a>
   <div class="nav-links">
     <a href="loading.html">Launch</a>
     <a href="workshops.html" class="active">Dashboard</a>
@@ -681,6 +838,7 @@
     <a href="vr.html">VR</a>
     <a href="long-horizon-exchange.html">Time Dilation</a>
     <a href="community.html">Community</a>
+    <a href="passport.html">Passport</a>
   </div>
   <div class="nav-user">
     <span class="stardust-pill">
@@ -692,7 +850,7 @@
       <div class="profile-head">
         <div class="profile-avatar">CG</div>
         <div>
-          <div class="profile-name">Cosmic Guest</div>
+          <div class="profile-name">SkyFolk Guest</div>
           <div class="profile-role">Explorer Level 3</div>
         </div>
       </div>
@@ -737,35 +895,89 @@
   <button class="filter-btn" data-org="OTHER">OTHERS</button>
 </div>
 
+<section class="overview-strip" aria-label="Cross-feature mission control">
+  <article class="location-prompt">
+    <div class="location-copy">
+      <span class="aside-kicker">Personalized Hub</span>
+      <h2>Your Sky Tonight</h2>
+      <p id="location-summary">Use your location to turn the dashboard into an exact local sky readout instead of the default demo coordinates.</p>
+    </div>
+    <button class="refresh-btn location-action" id="location-btn" type="button">Use My Location</button>
+  </article>
+  <div class="feature-grid" id="feature-grid">
+    <article class="feature-card"><span class="aside-kicker">Live hub</span><strong>Loading sky loop</strong><span class="feature-value">Connecting...</span><p class="feature-detail">Pulling the ISS pass window, moon phase, and watch-party context.</p></article>
+    <article class="feature-card"><span class="aside-kicker">Immersive</span><strong>Loading missions</strong><span class="feature-value">Connecting...</span><p class="feature-detail">Pulling VR scenes, CME transit, and relativity telemetry.</p></article>
+    <article class="feature-card"><span class="aside-kicker">Markets</span><strong>Loading game state</strong><span class="feature-value">Connecting...</span><p class="feature-detail">Pulling shared pools, recent trips, and active trend boards.</p></article>
+    <article class="feature-card"><span class="aside-kicker">Community</span><strong>Loading sessions</strong><span class="feature-value">Connecting...</span><p class="feature-detail">Pulling meetup activity, funding pools, and shared observing plans.</p></article>
+    <article class="feature-card"><span class="aside-kicker">Photography</span><strong>Loading gallery</strong><span class="feature-value">Connecting...</span><p class="feature-detail">Pulling the challenge, gallery size, and community favorites.</p></article>
+    <article class="feature-card"><span class="aside-kicker">Passport</span><strong>Loading record loop</strong><span class="feature-value">Connecting...</span><p class="feature-detail">Pulling converter context, Stardust balance, and logged observations.</p></article>
+  </div>
+</section>
+
 <div class="content">
-  <div class="status-bar">
-    <div id="status-text">Fetching live data...</div>
-    <div id="result-count"></div>
-  </div>
-  <div class="cards-grid" id="cards-grid">
-    <div class="skeleton-card">
-      <div class="skel-line" style="height:16px;width:40%"></div>
-      <div class="skel-line" style="height:20px;width:85%"></div>
-      <div class="skel-line" style="height:14px;width:60%"></div>
-      <div class="skel-line" style="height:60px;width:100%"></div>
+  <section class="dashboard-events" aria-label="Upcoming space events">
+    <div class="status-bar">
+      <div id="status-text">Fetching backend data...</div>
+      <div id="result-count"></div>
     </div>
-    <div class="skeleton-card">
-      <div class="skel-line" style="height:16px;width:40%"></div>
-      <div class="skel-line" style="height:20px;width:85%"></div>
-      <div class="skel-line" style="height:14px;width:60%"></div>
-      <div class="skel-line" style="height:60px;width:100%"></div>
+    <div class="cards-grid" id="cards-grid">
+      <div class="skeleton-card">
+        <div class="skel-line" style="height:16px;width:40%"></div>
+        <div class="skel-line" style="height:20px;width:85%"></div>
+        <div class="skel-line" style="height:14px;width:60%"></div>
+        <div class="skel-line" style="height:60px;width:100%"></div>
+      </div>
+      <div class="skeleton-card">
+        <div class="skel-line" style="height:16px;width:40%"></div>
+        <div class="skel-line" style="height:20px;width:85%"></div>
+        <div class="skel-line" style="height:14px;width:60%"></div>
+        <div class="skel-line" style="height:60px;width:100%"></div>
+      </div>
+      <div class="skeleton-card">
+        <div class="skel-line" style="height:16px;width:40%"></div>
+        <div class="skel-line" style="height:20px;width:85%"></div>
+        <div class="skel-line" style="height:14px;width:60%"></div>
+        <div class="skel-line" style="height:60px;width:100%"></div>
+      </div>
     </div>
-    <div class="skeleton-card">
-      <div class="skel-line" style="height:16px;width:40%"></div>
-      <div class="skel-line" style="height:20px;width:85%"></div>
-      <div class="skel-line" style="height:14px;width:60%"></div>
-      <div class="skel-line" style="height:60px;width:100%"></div>
-    </div>
-  </div>
+  </section>
+
+  <aside class="dashboard-aside" aria-label="NASA and live space information">
+    <section class="aside-card">
+      <span class="aside-kicker">Your sky tonight</span>
+      <h2>Live Sky Window</h2>
+      <div class="aside-value" id="sky-visibility">Waiting for /api/sky/overview...</div>
+      <p class="aside-muted" id="sky-meta"></p>
+    </section>
+
+    <section class="aside-card">
+      <span class="aside-kicker">Live ISS + drift</span>
+      <h2>ISS Position</h2>
+      <div class="aside-value" id="iss-position">Waiting for /api/sky/overview...</div>
+      <p class="aside-muted" id="iss-updated"></p>
+    </section>
+
+    <section class="aside-card">
+      <span class="aside-kicker">Passport + economy</span>
+      <h2>Stardust Snapshot</h2>
+      <div class="aside-value" id="stardust-balance">Sign in to load your balance.</div>
+      <p class="aside-muted" id="passport-meta"></p>
+    </section>
+
+    <section class="aside-card">
+      <span class="aside-kicker">Official sources</span>
+      <h2>NASA + Space Data</h2>
+      <ul id="source-list">
+        <li>Launches: backend `/api/feed` via The Space Devs.</li>
+        <li>Sky + ISS: backend `/api/sky/overview` via Open Notify and local calculations.</li>
+        <li>Passport and Stardust: Mongo-backed SkyFolk user data.</li>
+      </ul>
+    </section>
+  </aside>
 </div>
 
 <footer class="page-footer">
-  <span>Data sourced via AI-powered live web search · Results may vary with availability</span>
+    <span>Data flows through the SkyFolk backend: launches, personalized sky data, ISS tracking, passport logs, and Stardust.</span>
   <div style="display:flex;gap:8px;align-items:center">
     <span id="last-updated"></span>
     <button class="refresh-btn" id="refresh-btn" onclick="fetchWorkshops()">↻ Refresh</button>
@@ -776,105 +988,256 @@
 
 <div class="constellation-tooltip hidden" id="tooltip"></div>
 
+<script src="api.js"></script>
 <script src="login.js"></script>
 <script>
+  const DASHBOARD_API_BASE = localStorage.getItem('orbitApiBase') ||
+    (window.location.protocol === 'file:' ? 'http://127.0.0.1:3000/api' : `${window.location.origin}/api`);
+  const SESSION_STORAGE_KEY = 'orbitCurrentUser';
+  const TOKEN_STORAGE_KEY = 'orbitAuthToken';
+  const STATIC_PROGRAMMES = [
+    {
+      title: 'NASA Learning Resources',
+      org: 'NASA',
+      orgFull: 'National Aeronautics and Space Administration',
+      date: 'Open resource',
+      deadline: null,
+      location: 'Online',
+      mode: 'Online',
+      eligibility: 'Students and public learners',
+      description: 'Official NASA learning material and activity hubs you can use while live launch data refreshes.',
+      url: 'https://www.nasa.gov/learning-resources/',
+      source: 'NASA'
+    },
+    {
+      title: 'ISRO Outreach and Education',
+      org: 'ISRO',
+      orgFull: 'Indian Space Research Organisation',
+      date: 'Rolling updates',
+      deadline: null,
+      location: 'India / Online',
+      mode: 'Hybrid',
+      eligibility: 'Students and educators',
+      description: 'ISRO education and outreach programmes that match the SkyFolk astronomy community context.',
+      url: 'https://www.isro.gov.in/',
+      source: 'ISRO'
+    },
+    {
+      title: 'ESA Education',
+      org: 'ESA',
+      orgFull: 'European Space Agency',
+      date: 'Open resource',
+      deadline: null,
+      location: 'Online',
+      mode: 'Online',
+      eligibility: 'Students and educators',
+      description: 'Official ESA learning and challenge resources for space science exploration.',
+      url: 'https://www.esa.int/Education',
+      source: 'ESA'
+    }
+  ];
+
   let allWorkshops = [];
   let activeFilter = 'ALL';
+  let latestLaunch = null;
+  let latestSky = null;
+  let latestImmersive = null;
+  let latestPhotos = null;
+  let latestSessions = null;
+  let latestMarkets = null;
+  let latestPassport = null;
+  let latestStardust = null;
+  let viewerLocation = readViewerLocation();
 
-  // ── call Claude API with web search tool ──────────────────────
+  const profileBtn = document.getElementById('profileBtn');
+  const profileMenu = document.getElementById('profileMenu');
+  const locationButton = document.getElementById('location-btn');
+
   async function fetchWorkshops() {
     const btn = document.getElementById('refresh-btn');
     btn.disabled = true;
     btn.textContent = '↻ Fetching...';
-    setStatus('Searching the web for live workshop listings...');
+    setStatus('Loading launch feed and ISS data from the backend...');
     showSkeletons();
 
-    const today = new Date().toLocaleDateString('en-IN', {
-      day: 'numeric', month: 'long', year: 'numeric'
-    });
-
-    const prompt = `Today is ${today}.
-
-Search the web right now for upcoming space-related workshops, training programmes, internships, competitions, and events organised by or affiliated with:
-- ISRO (Indian Space Research Organisation) and any of its centres (VSSC, SAC, URSC, NRSC, etc.)
-- DRDO (Defence Research and Development Organisation)
-- IN-SPACe (Indian National Space Promotion and Authorisation Centre)
-- NASA (any open programmes or workshops available to Indian participants)
-- ESA (European Space Agency — open programmes)
-- Any other reputed space/aerospace organisations running programmes right now
-
-Search for: "ISRO workshop 2025", "ISRO internship 2025", "DRDO space workshop 2025", "IN-SPACe programme 2025", "space workshop India 2025", "NASA open programme 2025"
-
-For each event you find, return ONLY a JSON array. No markdown, no explanation, just raw JSON.
-
-Format exactly like this:
-[
-  {
-    "title": "Full name of the workshop/event",
-    "org": "ISRO" or "DRDO" or "NASA" or "ESA" or "OTHER",
-    "orgFull": "Full organisation name",
-    "date": "Event date or date range as a string",
-    "deadline": "Application deadline if mentioned, else null",
-    "location": "City/Online/Hybrid",
-    "mode": "Online" or "Offline" or "Hybrid",
-    "eligibility": "Who can apply",
-    "description": "2-3 sentence description of what the event covers",
-    "url": "Direct URL to the official event page if found, else null",
-    "source": "Where you found this info"
-  }
-]
-
-Include at least 6-10 results. If a programme is ongoing/always open (like ISRO's RESPOND), include it. If you cannot find a specific event for an org, don't fabricate one — skip it.`;
-
     try {
-      const res = await fetch('https://api.anthropic.com/v1/messages', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          model: 'claude-sonnet-4-6',
-          max_tokens: 4000,
-          tools: [{ type: 'web_search_20250305', name: 'web_search' }],
-          messages: [{ role: 'user', content: prompt }]
-        })
-      });
+      const currentUser = getStoredUser();
+      const skyPath = viewerLocation
+        ? `/sky/overview?lat=${encodeURIComponent(viewerLocation.lat)}&lng=${encodeURIComponent(viewerLocation.lng)}`
+        : '/sky/overview';
+      const authRequests = currentUser && currentUser.token
+        ? [
+            fetchAuthJson('/stardust/me', currentUser.token).catch(() => null),
+            fetchAuthJson('/passport', currentUser.token).catch(() => null)
+          ]
+        : [Promise.resolve(null), Promise.resolve(null)];
 
-      if (!res.ok) throw new Error(`API error: ${res.status}`);
-      const data = await res.json();
+      const [feedResponse, skyResponse, immersiveResponse, photosResponse, sessionsResponse, marketsResponse, stardustResponse, passportResponse] = await Promise.all([
+        fetchJson('/feed'),
+        fetchJson(skyPath),
+        fetchJson('/immersive/overview').catch(() => null),
+        fetchJson('/photos').catch(() => null),
+        fetchJson('/sessions').catch(() => null),
+        fetchJson('/markets').catch(() => null),
+        authRequests[0],
+        authRequests[1]
+      ]);
 
-      // extract text blocks — Claude may search first then respond
-      const textBlocks = data.content.filter(b => b.type === 'text').map(b => b.text);
-      const fullText = textBlocks.join('\n');
-
-      // extract JSON array from response
-      const jsonMatch = fullText.match(/\[[\s\S]*\]/);
-      if (!jsonMatch) throw new Error('No JSON array found in response');
-
-      allWorkshops = JSON.parse(jsonMatch[0]);
-      if (!Array.isArray(allWorkshops) || allWorkshops.length === 0) throw new Error('Empty results');
+      const launches = normalizeLaunches(feedResponse);
+      latestLaunch = launches[0] || null;
+      latestSky = skyResponse;
+      latestImmersive = immersiveResponse;
+      latestPhotos = photosResponse;
+      latestSessions = sessionsResponse;
+      latestMarkets = marketsResponse;
+      latestStardust = stardustResponse;
+      latestPassport = passportResponse;
+      allWorkshops = mergeProgrammes(launches);
 
       renderCards(allWorkshops);
+      renderAside({
+        sky: latestSky,
+        launch: latestLaunch,
+        stardust: latestStardust,
+        passport: latestPassport,
+      });
+      renderFeatureGrid();
+      renderLocationSummary();
       document.getElementById('last-updated').textContent =
         'Last updated: ' + new Date().toLocaleTimeString('en-IN');
-      setStatus(`Found ${allWorkshops.length} events`);
-      document.getElementById('result-count').textContent =
-        `Showing ${allWorkshops.length} results`;
-
-    } catch (err) {
-      console.error(err);
-      showError(err.message);
-      setStatus('Failed to fetch data');
+      setStatus(`Loaded ${launches.length} launches plus your personalized sky data`);
+    } catch (error) {
+      console.error(error);
+      allWorkshops = STATIC_PROGRAMMES.slice();
+      renderCards(allWorkshops);
+      renderAside({
+        sky: null,
+        launch: null,
+        stardust: null,
+        passport: null,
+        errorMessage: error.message,
+      });
+      renderFeatureGrid();
+      renderLocationSummary(error.message);
+      setStatus('Backend feed unavailable, showing fallback resources');
     } finally {
       btn.disabled = false;
       btn.textContent = '↻ Refresh';
     }
   }
 
-  // ── render ─────────────────────────────────────────────────────
+  async function fetchJson(path) {
+    const response = await fetch(`${DASHBOARD_API_BASE}${path}`);
+    const data = await response.json().catch(() => ({}));
+
+    if (!response.ok) {
+      throw new Error(data.message || `Request failed for ${path}`);
+    }
+
+    return data;
+  }
+
+  async function fetchAuthJson(path, token) {
+    const response = await fetch(`${DASHBOARD_API_BASE}${path}`, {
+      headers: {
+        Authorization: `Bearer ${token}`
+      }
+    });
+    const data = await response.json().catch(() => ({}));
+
+    if (!response.ok) {
+      throw new Error(data.message || `Request failed for ${path}`);
+    }
+
+    return data;
+  }
+
+  function getStoredUser() {
+    try {
+      const raw = localStorage.getItem(SESSION_STORAGE_KEY);
+      const stored = raw ? JSON.parse(raw) : null;
+      const token = localStorage.getItem(TOKEN_STORAGE_KEY);
+      if (!stored || !token) return null;
+      return { ...stored, token };
+    } catch {
+      return null;
+    }
+  }
+
+  function readViewerLocation() {
+    try {
+      const raw = localStorage.getItem('orbitSkyLocation');
+      const parsed = raw ? JSON.parse(raw) : null;
+      if (!parsed || typeof parsed.lat !== 'number' || typeof parsed.lng !== 'number') return null;
+      return parsed;
+    } catch {
+      return null;
+    }
+  }
+
+  function persistViewerLocation(lat, lng) {
+    viewerLocation = { lat, lng };
+    localStorage.setItem('orbitSkyLocation', JSON.stringify(viewerLocation));
+  }
+
+  function clearViewerLocation() {
+    viewerLocation = null;
+    localStorage.removeItem('orbitSkyLocation');
+  }
+
+  function normalizeLaunches(feedResponse) {
+    const results = Array.isArray(feedResponse?.results) ? feedResponse.results : [];
+
+    return results.map(item => {
+      const provider = item.launch_service_provider?.name || 'OTHER';
+      const org = mapOrg(provider);
+      return {
+        title: item.name || 'Upcoming launch',
+        org,
+        orgFull: provider,
+        date: formatDate(item.net),
+        deadline: null,
+        location: item.pad?.location?.name || 'Launch site pending',
+        mode: 'Offline',
+        eligibility: 'Public viewing / tracking',
+        description: item.mission?.description || `Track the ${provider} launch window and follow updates from SkyFolk mission control.`,
+        url: item.url || (item.id ? `https://spacelaunchnow.me/launch/${item.id}` : null),
+        source: 'The Space Devs',
+        status: item.status?.name || 'Scheduled'
+      };
+    });
+  }
+
+  function mergeProgrammes(launches) {
+    return [...launches, ...STATIC_PROGRAMMES];
+  }
+
+  function mapOrg(provider) {
+    const name = provider.toUpperCase();
+    if (name.includes('NASA')) return 'NASA';
+    if (name.includes('ESA')) return 'ESA';
+    if (name.includes('ISRO')) return 'ISRO';
+    if (name.includes('DRDO')) return 'DRDO';
+    return 'OTHER';
+  }
+
+  function formatDate(value) {
+    if (!value) return 'Date TBD';
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) return 'Date TBD';
+    return date.toLocaleString('en-IN', {
+      day: 'numeric',
+      month: 'short',
+      year: 'numeric',
+      hour: 'numeric',
+      minute: '2-digit'
+    });
+  }
+
   function renderCards(workshops) {
     const filtered = activeFilter === 'ALL'
       ? workshops
-      : workshops.filter(w => w.org === activeFilter ||
-          (activeFilter === 'OTHER' && !['ISRO','DRDO','NASA','ESA'].includes(w.org)));
+      : workshops.filter(w => w.org === activeFilter || (activeFilter === 'OTHER' && !['ISRO', 'DRDO', 'NASA', 'ESA'].includes(w.org)));
 
     const grid = document.getElementById('cards-grid');
 
@@ -882,71 +1245,208 @@ Include at least 6-10 results. If a programme is ongoing/always open (like ISRO'
       grid.innerHTML = `<div class="empty-state">
         <div class="icon">🔭</div>
         <h3>No events found for ${activeFilter}</h3>
-        <p>Try a different filter or refresh to search again.</p>
+        <p>Try a different filter or refresh the backend feed.</p>
       </div>`;
       document.getElementById('result-count').textContent = '0 results';
       return;
     }
 
-    document.getElementById('result-count').textContent =
-      `Showing ${filtered.length} of ${workshops.length} results`;
+    document.getElementById('result-count').textContent = `Showing ${filtered.length} of ${workshops.length} results`;
 
     const accentMap = {
-      ISRO: '#FF6B35', DRDO: '#5EE6D9', NASA: '#4A9EFF',
-      ESA: '#A78BFA', OTHER: '#6EE7B7'
+      ISRO: '#FF6B35',
+      DRDO: '#5EE6D9',
+      NASA: '#4A9EFF',
+      ESA: '#A78BFA',
+      OTHER: '#6EE7B7'
     };
 
     grid.innerHTML = filtered.map(w => {
       const org = w.org || 'OTHER';
       const accent = accentMap[org] || accentMap.OTHER;
       const orgClass = `org-${org.toLowerCase()}`;
-
-      const deadlineText = w.deadline
-        ? `DEADLINE: ${w.deadline}`
-        : 'No deadline listed';
-
-      const isUrgent = w.deadline && isDeadlineSoon(w.deadline);
+      const secondaryLabel = w.status ? `Status: ${w.status}` : (w.deadline ? `Deadline: ${w.deadline}` : 'Official resource');
 
       return `
         <article class="workshop-card" style="--card-accent: ${accent}">
           <div class="card-top">
             <span class="org-tag ${orgClass}">${org}</span>
-            <span class="date-badge">${w.date || 'Date TBD'}</span>
+            <span class="date-badge">${escHtml(w.date || 'Date TBD')}</span>
           </div>
           <h2 class="card-title">${escHtml(w.title)}</h2>
           <div class="card-meta">
             <span class="meta-chip">📍 ${escHtml(w.location || 'TBD')}</span>
-            <span class="meta-chip">${w.mode === 'Online' ? '💻' : w.mode === 'Hybrid' ? '🔀' : '🏛️'} ${escHtml(w.mode || 'TBD')}</span>
-            ${w.eligibility ? `<span class="meta-chip">👤 ${escHtml(w.eligibility)}</span>` : ''}
+            <span class="meta-chip">${w.mode === 'Online' ? 'Online' : w.mode === 'Hybrid' ? 'Hybrid' : 'On-site'}</span>
+            ${w.eligibility ? `<span class="meta-chip">${escHtml(w.eligibility)}</span>` : ''}
           </div>
           <p class="card-desc">${escHtml(w.description || '')}</p>
           <div class="card-footer">
-            <span class="deadline ${isUrgent ? 'urgent' : ''}">${deadlineText}</span>
-            ${w.url
-              ? `<a class="source-link" href="${escHtml(w.url)}" target="_blank" rel="noopener">Visit →</a>`
-              : w.source
-              ? `<span class="source-link" title="${escHtml(w.source)}">Source</span>`
-              : ''}
+            <span class="deadline">${escHtml(secondaryLabel)}</span>
+            ${w.url ? `<a class="source-link" href="${escHtml(w.url)}" target="_blank" rel="noopener">Visit</a>` : `<span class="source-link">${escHtml(w.source || 'Source')}</span>`}
           </div>
         </article>`;
     }).join('');
   }
 
-  function isDeadlineSoon(deadline) {
-    try {
-      const d = new Date(deadline);
-      const diff = (d - Date.now()) / (1000 * 60 * 60 * 24);
-      return diff >= 0 && diff <= 7;
-    } catch { return false; }
+  function renderAside({ sky, launch, stardust, passport, errorMessage = '' }) {
+    const skyVisibility = document.getElementById('sky-visibility');
+    const skyMeta = document.getElementById('sky-meta');
+    const issPosition = document.getElementById('iss-position');
+    const issUpdated = document.getElementById('iss-updated');
+    const stardustBalance = document.getElementById('stardust-balance');
+    const passportMeta = document.getElementById('passport-meta');
+    const sourceList = document.getElementById('source-list');
+
+    if (sky?.sky) {
+      skyVisibility.textContent = sky.sky.visibility;
+      skyMeta.textContent = `${sky.sky.moonPhase} • ${sky.sky.sunStatus} • ${sky.sky.orbitUnit}`;
+    } else {
+      skyVisibility.textContent = errorMessage || 'Sky overview unavailable right now.';
+      skyMeta.textContent = 'The hub will retry on refresh.';
+    }
+
+    if (sky?.iss?.iss_position) {
+      issPosition.textContent = `Lat ${Number(sky.iss.iss_position.latitude).toFixed(2)}, Lon ${Number(sky.iss.iss_position.longitude).toFixed(2)}`;
+      issUpdated.textContent = `Next visible pass in about ${sky.iss.nextVisiblePassMinutes} min • ${sky.iss.watchPartyCount} people near you could see this pass • astronaut drift ${sky.iss.relativisticOffsetMicroseconds} µs`;
+    } else {
+      issPosition.textContent = errorMessage || 'ISS position unavailable right now.';
+      issUpdated.textContent = 'Using backend fallback state.';
+    }
+
+    if (stardust) {
+      const entryCount = Array.isArray(passport?.entries) ? passport.entries.length : 0;
+      const lastReason = Array.isArray(stardust.ledger) && stardust.ledger[0] ? stardust.ledger[0].reason : 'No recent ledger activity yet';
+      stardustBalance.textContent = `${Number(stardust.balance || 0).toLocaleString('en-IN')} Stardust`;
+      passportMeta.textContent = `${entryCount} passport logs • reputation ${Number(stardust.reputationScore || 0).toLocaleString('en-IN')} • latest: ${lastReason}`;
+    } else {
+      stardustBalance.textContent = 'Sign in to load your balance.';
+      passportMeta.textContent = 'Your Cosmic Passport summary appears here after login.';
+    }
+
+    sourceList.innerHTML = `
+      <li>${launch ? `<strong>Next launch:</strong> ${escHtml(launch.title)} • ${escHtml(launch.date)} • ${escHtml(launch.location)}` : 'No launch data available right now.'}</li>
+      <li><a href="https://www.nasa.gov/learning-resources/" target="_blank" rel="noopener">NASA learning resources</a></li>
+      <li><a href="https://www.isro.gov.in/" target="_blank" rel="noopener">ISRO official updates</a></li>
+      <li><a href="https://www.esa.int/Education" target="_blank" rel="noopener">ESA education</a></li>
+      ${sky?.converter ? `<li>Perspective tool: ${sky.converter.screenTimeMinutes} minutes = ${sky.converter.equivalentIssOrbits} ISS orbits.</li>` : ''}
+    `;
   }
 
-  function escHtml(s) {
-    return String(s || '')
-      .replace(/&/g,'&amp;').replace(/</g,'&lt;')
-      .replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+  function renderLocationSummary(errorMessage = '') {
+    const summary = document.getElementById('location-summary');
+    if (!summary) return;
+
+    if (latestSky?.location?.label) {
+      summary.textContent = `${latestSky.location.label} • ${latestSky.sky.moonPhase} • next visible pass in about ${latestSky.iss.nextVisiblePassMinutes} minutes.`;
+      return;
+    }
+
+    if (errorMessage) {
+      summary.textContent = `Sky location unavailable right now. ${errorMessage}`;
+      return;
+    }
+
+    summary.textContent = viewerLocation
+      ? 'Using your saved coordinates, but the sky service has not responded yet.'
+      : 'Use your location to turn the dashboard into an exact local sky readout instead of the default demo coordinates.';
   }
 
-  // ── skeletons ──────────────────────────────────────────────────
+  function renderFeatureGrid() {
+    const root = document.getElementById('feature-grid');
+    if (!root) return;
+
+    const marketCount = Array.isArray(latestMarkets?.markets) ? latestMarkets.markets.length : 0;
+    const marketPool = Array.isArray(latestMarkets?.markets)
+      ? latestMarkets.markets.reduce((sum, market) => sum + (Array.isArray(market.pools) ? market.pools.reduce((poolSum, value) => poolSum + Number(value || 0), 0) : 0), 0)
+      : 0;
+    const sessions = Array.isArray(latestSessions?.sessions) ? latestSessions.sessions : [];
+    const totalFunding = sessions.reduce((sum, session) => sum + Number(session.fundingRaised || 0), 0);
+    const photos = Array.isArray(latestPhotos?.photos) ? latestPhotos.photos : [];
+    const passportEntries = Array.isArray(latestPassport?.entries) ? latestPassport.entries.length : 0;
+    const stardustBalance = latestStardust ? `${Number(latestStardust.balance || 0).toLocaleString('en-IN')} ✦` : 'Sign in';
+
+    const cards = [
+      {
+        kicker: 'Live hub',
+        title: 'Your Sky Tonight',
+        value: latestSky?.iss ? `${latestSky.iss.nextVisiblePassMinutes} min to next pass` : 'Sky feed offline',
+        detail: latestSky?.sky
+          ? `${latestSky.sky.moonPhase} • ${latestSky.sky.visibility} • ${latestSky.iss.watchPartyCount} nearby watchers`
+          : 'Moon phase, visibility, and ISS watch-party context appear here.',
+        href: 'iss.html',
+        linkLabel: 'Open ISS tracker'
+      },
+      {
+        kicker: 'Immersive',
+        title: 'VR + simulations',
+        value: latestImmersive?.telemetry ? `${latestImmersive.telemetry.missionsOnline} active scenes` : 'Mission feed offline',
+        detail: latestImmersive?.telemetry
+          ? `${latestImmersive.telemetry.cmeTravelDays} day CME transit • ${latestImmersive.telemetry.solarCycle} solar cycle • drift ${latestImmersive.telemetry.relativisticOffsetMicroseconds} µs`
+          : 'Black hole lensing, pulsars, supernovae, and solar storm scenes.',
+        href: 'vr.html',
+        linkLabel: 'Launch immersive'
+      },
+      {
+        kicker: 'Markets',
+        title: 'Time-dilation trading',
+        value: marketCount ? `${marketCount} live trend boards` : 'Market feed offline',
+        detail: marketCount
+          ? `${marketPool.toLocaleString('en-IN')} ✦ across shared pools • ${(Array.isArray(latestMarkets?.activity) ? latestMarkets.activity : []).length} live activity items`
+          : 'Shared odds, drift score, and asynchronous return reports appear here.',
+        href: 'long-horizon-exchange.html',
+        linkLabel: 'Open time dilation'
+      },
+      {
+        kicker: 'Community',
+        title: 'Stargazing sessions',
+        value: sessions.length ? `${sessions.length} meetups live` : 'No sessions loaded',
+        detail: sessions.length
+          ? `${totalFunding.toLocaleString('en-IN')} INR pooled • ${sessions.filter(item => item.status === 'scheduled').length} still scheduled`
+          : 'Hosts, funding pools, and equipment coordination appear here.',
+        href: 'community.html',
+        linkLabel: 'Open community'
+      },
+      {
+        kicker: 'Photography',
+        title: 'Astro gallery',
+        value: photos.length ? `${photos.length} community shots` : 'Gallery offline',
+        detail: latestPhotos
+          ? `${latestPhotos.communityFavoriteCount} community favorites • challenge: ${latestPhotos?.weeklyChallenge?.title || 'TBD'}`
+          : 'Community uploads, Stardust gifts, and dark-sky spot signals appear here.',
+        href: 'photography.html',
+        linkLabel: 'Open photography'
+      },
+      {
+        kicker: 'Passport',
+        title: 'Observation loop',
+        value: `${stardustBalance} balance`,
+        detail: latestSky?.converter
+          ? `${passportEntries} logged sightings • ${latestSky.converter.screenTimeMinutes} min = ${latestSky.converter.equivalentIssOrbits} ISS orbits`
+          : 'Cosmic Passport logs and the perspective converter appear here.',
+        href: 'passport.html',
+        linkLabel: 'Open passport'
+      }
+    ];
+
+    root.innerHTML = cards.map(card => `
+      <article class="feature-card">
+        <span class="aside-kicker">${card.kicker}</span>
+        <strong>${card.title}</strong>
+        <span class="feature-value">${escHtml(card.value)}</span>
+        <p class="feature-detail">${escHtml(card.detail)}</p>
+        <a class="feature-link" href="${card.href}">${card.linkLabel}</a>
+      </article>
+    `).join('');
+  }
+
+  function escHtml(value) {
+    return String(value || '')
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;');
+  }
+
   function showSkeletons() {
     document.getElementById('cards-grid').innerHTML = Array(6).fill(0).map(() => `
       <div class="skeleton-card">
@@ -957,36 +1457,61 @@ Include at least 6-10 results. If a programme is ongoing/always open (like ISRO'
       </div>`).join('');
   }
 
-  function showError(msg) {
+  function showError(message) {
     document.getElementById('cards-grid').innerHTML = `
       <div class="error-state">
         <div class="icon">⚠️</div>
-        <h3>Couldn't fetch live data</h3>
-        <p>${escHtml(msg)}</p>
+        <h3>Could not load the backend feed</h3>
+        <p>${escHtml(message)}</p>
         <button class="retry-btn" onclick="fetchWorkshops()">Try Again</button>
       </div>`;
   }
 
-  function setStatus(msg) {
-    document.getElementById('status-text').textContent = msg;
+  function setStatus(message) {
+    document.getElementById('status-text').textContent = message;
   }
 
-  // ── filters ────────────────────────────────────────────────────
-  document.querySelectorAll('.filter-btn').forEach(btn => {
-    btn.addEventListener('click', () => {
-      document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
-      btn.classList.add('active');
-      activeFilter = btn.dataset.org;
-      if (allWorkshops.length > 0) renderCards(allWorkshops);
+  async function requestViewerLocation() {
+    if (!navigator.geolocation) {
+      renderLocationSummary('Geolocation is not available in this browser.');
+      return;
+    }
+
+    locationButton.disabled = true;
+    locationButton.textContent = 'Locating...';
+
+    navigator.geolocation.getCurrentPosition(position => {
+      persistViewerLocation(position.coords.latitude, position.coords.longitude);
+      locationButton.disabled = false;
+      locationButton.textContent = 'Refresh Local Sky';
+      fetchWorkshops();
+    }, error => {
+      clearViewerLocation();
+      locationButton.disabled = false;
+      locationButton.textContent = 'Use My Location';
+      renderLocationSummary(error.message || 'Unable to read your location.');
+    }, {
+      enableHighAccuracy: true,
+      timeout: 12000,
+      maximumAge: 120000,
     });
-  });
+  }
 
-  // ── auto-refresh every 30 minutes ─────────────────────────────
-  fetchWorkshops();
-  setInterval(fetchWorkshops, 30 * 60 * 1000);
+  function hydrateProfile() {
+    const storedUser = JSON.parse(localStorage.getItem(SESSION_STORAGE_KEY) || 'null');
+    const profileName = document.querySelector('.profile-name');
+    const avatar = document.getElementById('profileBtn');
+    const profileAvatar = document.querySelector('.profile-avatar');
+    const stardust = storedUser?.stardustBalance ?? 0;
+    const displayName = storedUser?.displayName || 'SkyFolk Guest';
+    const initials = displayName.split(/\s+/).map(part => part[0]).join('').slice(0, 2).toUpperCase() || 'SF';
 
-  const profileBtn = document.getElementById('profileBtn');
-  const profileMenu = document.getElementById('profileMenu');
+    profileName.textContent = displayName;
+    avatar.textContent = initials;
+    profileAvatar.textContent = initials;
+    document.getElementById('myStardust').textContent = Number(stardust).toLocaleString('en-IN');
+    document.getElementById('profileStardust').textContent = Number(stardust).toLocaleString('en-IN');
+  }
 
   function closeProfileMenu() {
     profileMenu.classList.add('hidden');
@@ -999,21 +1524,60 @@ Include at least 6-10 results. If a programme is ongoing/always open (like ISRO'
     profileBtn.setAttribute('aria-expanded', String(!isOpen));
   }
 
+  document.querySelectorAll('.filter-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('.filter-btn').forEach(item => item.classList.remove('active'));
+      btn.classList.add('active');
+      activeFilter = btn.dataset.org;
+      renderCards(allWorkshops);
+    });
+  });
+
   profileBtn.addEventListener('click', event => {
     event.stopPropagation();
     toggleProfileMenu();
   });
 
   profileMenu.addEventListener('click', event => {
-    event.stopPropagation();
+    const action = event.target.closest('[data-profile-action]')?.dataset.profileAction;
+    if (!action) {
+      event.stopPropagation();
+      return;
+    }
+
+    if (action === 'signout') {
+      localStorage.removeItem(SESSION_STORAGE_KEY);
+      localStorage.removeItem(TOKEN_STORAGE_KEY);
+      window.location.href = 'index.html';
+      return;
+    }
+
+    if (action === 'workshops') {
+      closeProfileMenu();
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+      return;
+    }
+
+    closeProfileMenu();
+    alert('This section is scaffolded in the frontend and can be connected when the backend endpoint exists.');
   });
 
   document.addEventListener('click', closeProfileMenu);
   document.addEventListener('keydown', event => {
     if (event.key === 'Escape') closeProfileMenu();
   });
+
+  locationButton.addEventListener('click', requestViewerLocation);
+
+  if (viewerLocation) {
+    locationButton.textContent = 'Refresh Local Sky';
+  }
+
+  hydrateProfile();
+  fetchWorkshops();
+  setInterval(fetchWorkshops, 30 * 60 * 1000);
 </script>
-<script src="orbit-ai.js"></script>
+<script src="session.js"></script>
 
 </body>
 </html>

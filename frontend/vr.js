@@ -7,50 +7,82 @@
    Everything else (menu card, switching, HUD) wires up automatically.
    ============================================================= */
 
-const SCENES = [
+let SCENES = [
   {
     id: 'saturn',
     icon: '🪐',
     accent: '#D8B26B',
     name: "Saturn's Ring Plane",
-    desc: "Float inside Saturn's rings — ice boulders drifting past, the gas giant looming overhead."
+    desc: "Float inside Saturn's rings — ice boulders drifting past, the gas giant looming overhead.",
+    mode: 'Desktop + VR',
+    status: 'stable'
   },
   {
     id: 'moon',
     icon: '🌕',
     accent: '#C9CDD3',
     name: 'Apollo 11: Tranquility Base',
-    desc: 'Walk the lunar surface beside the Eagle lander and look back at Earth from the Moon.'
+    desc: 'Walk the lunar surface beside the Eagle lander and look back at Earth from the Moon.',
+    mode: 'Desktop + VR',
+    status: 'stable'
   },
   {
     id: 'blackhole',
     icon: '🌑',
     accent: '#FF6600',
     name: 'Stellar Black Hole',
-    desc: 'Stand before a black hole — accretion disk blazing, relativistic jets firing, light bending around the event horizon.'
+    desc: 'Stand before a black hole — accretion disk blazing, relativistic jets firing, light bending around the event horizon.',
+    mode: '360 mode',
+    status: 'stable'
   },
   {
     id: 'pulsar',
     icon: '💫',
     accent: '#88CCFF',
     name: 'Millisecond Pulsar',
-    desc: 'Watch a neutron star spin 716 times per second, sweeping twin lighthouse beams across space.'
+    desc: 'Watch a neutron star spin 716 times per second, sweeping twin lighthouse beams across space.',
+    mode: 'Desktop + VR',
+    status: 'stable'
   },
   {
-    id: 'bennu',
-    icon: '☄️',
-    accent: '#9C8B7A',
-    name: 'Asteroid Bennu Approach',
-    desc: 'Simulate the OSIRIS-REx proximity operations around asteroid Bennu.'
+    id: 'earthiss',
+    icon: '🛰️',
+    accent: '#5EE6D9',
+    name: 'Earth Orbit: ISS Overlook',
+    desc: 'Hover above Earth and watch the ISS cross the limb in low orbit.',
+    mode: 'Phone + desktop',
+    status: 'live'
   },
   {
     id: 'solarsystem',
     icon: '🌌',
     accent: '#FDB813',
     name: 'The Solar System',
-    desc: 'Fly through a scaled orbital model of the Sun and all 8 planets, Saturn with visible rings.'
+    desc: 'Fly through a scaled orbital model of the Sun and all 8 planets, Saturn with visible rings.',
+    mode: 'Desktop + VR',
+    status: 'stable'
+  },
+  {
+    id: 'supernova',
+    icon: '✨',
+    accent: '#FF8F7A',
+    name: 'Supernova Timeline',
+    desc: 'Stand inside an expanding shock front as a massive star tears itself apart.',
+    mode: 'Desktop + VR',
+    status: 'beta'
+  },
+  {
+    id: 'cme',
+    icon: '☀️',
+    accent: '#F0A060',
+    name: 'Solar Flare and CME Corridor',
+    desc: 'Follow a coronal mass ejection as it leaves the Sun and heads toward Earth.',
+    mode: 'Desktop + VR',
+    status: 'beta'
   }
 ];
+
+const api = window.SkyFolkApi;
 
 const starCanvas = document.getElementById('starCanvas');
 const starCtx = starCanvas ? starCanvas.getContext('2d') : null;
@@ -78,6 +110,7 @@ document.addEventListener('DOMContentLoaded', () => {
   initOrbitBackground();
   buildMenu();
   wireGlobalControls();
+  loadImmersiveOverview();
 });
 
 function initOrbitBackground() {
@@ -185,8 +218,10 @@ function initOrbitBackground() {
 function buildMenu() {
   const grid = document.getElementById('menu-grid');
   if (!grid) return;
+  grid.innerHTML = '';
 
   SCENES.forEach((scene, index) => {
+    if (!document.getElementById(`scene-${scene.id}`)) return;
     const card = document.createElement('button');
     card.className = 'scene-card';
     card.style.setProperty('--card-accent', scene.accent);
@@ -197,11 +232,62 @@ function buildMenu() {
       <span class="scene-icon" aria-hidden="true">${scene.icon}</span>
       <span class="scene-name">${scene.name}</span>
       <span class="scene-desc">${scene.desc}</span>
+      <span class="scene-meta">
+        <span class="scene-mode">${scene.mode || 'Desktop + VR'}</span>
+        <span class="scene-status">${scene.status || 'stable'}</span>
+      </span>
     `;
 
     card.addEventListener('click', () => activateScene(scene.id));
     grid.appendChild(card);
   });
+}
+
+async function loadImmersiveOverview() {
+  if (!api) return;
+
+  try {
+    const result = await api.get('/immersive/overview');
+    const availableIds = new Set(Array.from(document.querySelectorAll('.scene-group')).map(node => node.id.replace('scene-', '')));
+    const missionMap = new Map((result.missions || []).map(mission => [mission.id, mission]));
+
+    SCENES = SCENES
+      .map(scene => missionMap.has(scene.id) ? { ...scene, ...missionMap.get(scene.id) } : scene)
+      .filter(scene => availableIds.has(scene.id));
+
+    const missionCount = document.getElementById('mission-count');
+    if (missionCount) {
+      const count = result.telemetry?.missionsOnline || SCENES.length;
+      missionCount.textContent = `MISSION SELECT — ${count} ACTIVE TARGETS`;
+    }
+
+    const footer = document.getElementById('mission-footer-copy');
+    if (footer && result.telemetry) {
+      footer.textContent = `${result.telemetry.orbitUnit} · ${result.telemetry.skyVisibility} · WebXR ready`;
+    }
+
+    const highlights = Array.isArray(result.highlights) ? result.highlights : [];
+    const watch = highlights[0];
+    const solar = highlights[1];
+    const relativity = highlights[2];
+
+    if (watch) {
+      document.getElementById('brief-watch-value').textContent = watch.value;
+      document.getElementById('brief-watch-detail').textContent = watch.detail;
+    }
+    if (solar) {
+      document.getElementById('brief-solar-value').textContent = solar.value;
+      document.getElementById('brief-solar-detail').textContent = solar.detail;
+    }
+    if (relativity) {
+      document.getElementById('brief-relativity-value').textContent = relativity.value;
+      document.getElementById('brief-relativity-detail').textContent = relativity.detail;
+    }
+
+    buildMenu();
+  } catch (error) {
+    console.error(error);
+  }
 }
 
 /* -------------------------------------------------------------

@@ -3,14 +3,13 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
-  <title>VR WORLD &mdash; Space Phenomena Simulator</title>
+  <title>SkyFolk — Immersive Missions</title>
 
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Sora:wght@400;600;800&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
 
   <link rel="stylesheet" href="vr.css" />
-  <link rel="stylesheet" href="orbit-ai.css" />
 
   <script src="https://aframe.io/releases/1.5.0/aframe.min.js"></script>
   <!-- Components MUST be registered before a-scene is parsed by A-Frame -->
@@ -25,7 +24,7 @@
   </div>
 
   <nav class="navbar">
-    <a class="nav-logo" href="photography.html">✦ Orbit</a>
+    <a class="nav-logo" href="photography.html">✦ SkyFolk</a>
     <div class="nav-links">
       <a href="loading.html">Launch</a>
       <a href="workshops.html">Dashboard</a>
@@ -34,6 +33,7 @@
       <a href="vr.html" class="active">VR</a>
       <a href="long-horizon-exchange.html">Time Dilation</a>
       <a href="community.html">Community</a>
+      <a href="passport.html">Passport</a>
     </div>
     <div class="nav-user">
       <span class="stardust-pill">✦ <span id="navStardust">1,240</span> pts</span>
@@ -42,7 +42,7 @@
         <div class="profile-head">
           <div class="profile-avatar">CG</div>
           <div>
-            <div class="profile-name">Cosmic Guest</div>
+            <div class="profile-name">SkyFolk Guest</div>
             <div class="profile-role">Explorer Level 3</div>
           </div>
         </div>
@@ -67,17 +67,34 @@
 
   <main id="menu-overlay">
     <header class="menu-header">
-      <p class="menu-eyebrow">MISSION SELECT &mdash; 6 ACTIVE TARGETS</p>
-      <h1 class="menu-title">VR WORLD</h1>
+      <p class="menu-eyebrow" id="mission-count">MISSION SELECT &mdash; 8 ACTIVE TARGETS</p>
+      <h1 class="menu-title">Immersive Missions</h1>
       <p class="menu-subtitle">
         Pick a destination below. On desktop, drag to look around.
         On a headset, tap <strong>Enter VR</strong> for full immersion.
       </p>
     </header>
+    <section class="mission-brief" aria-label="Live immersive telemetry">
+      <article class="brief-card">
+        <span class="brief-label">Shared watch</span>
+        <strong id="brief-watch-value">Loading live sky context...</strong>
+        <p id="brief-watch-detail">Pulling the next visible pass and nearby watch-party count.</p>
+      </article>
+      <article class="brief-card">
+        <span class="brief-label">Solar weather</span>
+        <strong id="brief-solar-value">Loading solar corridor...</strong>
+        <p id="brief-solar-detail">Estimating CME transit timing for the immersive missions.</p>
+      </article>
+      <article class="brief-card">
+        <span class="brief-label">Relativity tie-in</span>
+        <strong id="brief-relativity-value">Loading drift data...</strong>
+        <p id="brief-relativity-detail">Connecting astronaut clock drift back to the trading game.</p>
+      </article>
+    </section>
     <section id="menu-grid" class="menu-grid" aria-label="Select a simulation"></section>
     <footer class="menu-footer">
       <span class="footer-dot"></span>
-      Built with A-Frame &middot; WebXR ready &middot; works on desktop, mobile &amp; headset
+      <span id="mission-footer-copy">Built with A-Frame &middot; WebXR ready &middot; works on desktop, mobile &amp; headset</span>
     </footer>
   </main>
 
@@ -358,25 +375,34 @@
     </a-entity>
 
     <!-- =====================================================
-         SCENE 5 — ASTEROID BENNU (OSIRIS-REx)
+         SCENE 5 — EARTH ORBIT / ISS OVERLOOK
          ===================================================== -->
-    <a-entity id="scene-bennu" class="scene-group" visible="false">
-      <a-sky color="#000005"></a-sky>
-      <a-light type="ambient" color="#444444" intensity="0.5"></a-light>
-      <a-light type="directional" color="#FFFFFF" intensity="1.4" position="3 2 1"></a-light>
+    <a-entity id="scene-earthiss" class="scene-group" visible="false">
+      <a-sky color="#01030A"></a-sky>
+      <a-light type="ambient" color="#223344" intensity="0.45"></a-light>
+      <a-light type="directional" color="#FFFFFF" intensity="1.2" position="-2 1 1"></a-light>
 
-      <a-entity position="0 1.6 -10"
-                 irregular-asteroid="radius: 4.5; detail: 3; displacement: 0.45; seed: 7"
-                 animation="property: rotation; to: 30 360 10; dur: 70000; loop: true; easing: linear">
+      <a-sphere pro-tex="name: earth" radius="7.8" position="0 -2.4 -18"
+                animation="property: rotation; to: 0 360 0; dur: 120000; loop: true; easing: linear">
+      </a-sphere>
+      <a-sphere radius="7.95" position="0 -2.4 -18"
+                material="color: #5EA2FF; transparent: true; opacity: 0.10; side: double; shader: flat">
+      </a-sphere>
+
+      <a-entity position="0 2.1 -8.8"
+                animation="property: rotation; to: 0 360 0; dur: 16000; loop: true; easing: linear">
+        <a-box width="0.85" height="0.22" depth="0.22" color="#DCE5FF"></a-box>
+        <a-box width="0.18" height="0.5" depth="0.18" color="#CAD5F8"></a-box>
+        <a-plane width="1.2" height="0.45" position="1.05 0 0" color="#1A2540" material="side: double"></a-plane>
+        <a-plane width="1.2" height="0.45" position="-1.05 0 0" color="#1A2540" material="side: double"></a-plane>
+        <a-sphere radius="0.06" position="0 0.18 0.18" color="#88D9FF"
+                  material="emissive: #88D9FF; emissiveIntensity: 1.2; shader: flat"></a-sphere>
       </a-entity>
 
-      <a-entity position="0 1.6 -3">
-        <a-box width="0.4" height="0.4" depth="0.4" color="#DADFE3" metalness="0.7" roughness="0.3"></a-box>
-        <a-plane width="1.2" height="0.5" position="0.85 0 0" color="#1A1F2E" material="side: double"></a-plane>
-        <a-plane width="1.2" height="0.5" position="-0.85 0 0" color="#1A1F2E" material="side: double"></a-plane>
-        <a-text value="OSIRIS-REx&#10;Proximity Operations — Bennu" align="center"
-                position="0 0.7 0" color="#DADFE3" width="3"></a-text>
-      </a-entity>
+      <a-torus radius="9.6" radius-tubular="0.02" position="0 -2.4 -18" rotation="74 10 0"
+               material="color: #5EE6D9; transparent: true; opacity: 0.35; shader: flat"></a-torus>
+      <a-text value="EARTH ORBIT&#10;ISS OVERLOOK" position="0 4.2 -8.5" align="center"
+              color="#9FD4FF" width="5" opacity="0.9"></a-text>
     </a-entity>
 
     <!-- =====================================================
@@ -492,10 +518,80 @@
       </a-entity>
     </a-entity>
 
+    <!-- =====================================================
+         SCENE 7 — SUPERNOVA TIMELINE
+         ===================================================== -->
+    <a-entity id="scene-supernova" class="scene-group" visible="false">
+      <a-sky color="#02030A"></a-sky>
+      <a-light type="ambient" color="#331A1A" intensity="0.3"></a-light>
+      <a-light type="point" color="#FFD7A1" intensity="2.6" position="0 1.6 -10" distance="80"></a-light>
+
+      <a-sphere position="0 1.6 -10" radius="1.2"
+                material="color: #FFD4A8; emissive: #FF8F7A; emissiveIntensity: 2; shader: flat"
+                animation="property: scale; from: 0.8 0.8 0.8; to: 1.5 1.5 1.5; dir: alternate; dur: 1400; loop: true; easing: easeInOutSine">
+      </a-sphere>
+      <a-sphere position="0 1.6 -10" radius="1.9"
+                material="color: #FFAA7A; transparent: true; opacity: 0.22; side: double; shader: flat"
+                animation="property: scale; from: 1 1 1; to: 4.5 4.5 4.5; dur: 3800; loop: true; easing: easeOutQuad">
+      </a-sphere>
+      <a-sphere position="0 1.6 -10" radius="1.5"
+                material="color: #FFD1B5; transparent: true; opacity: 0.16; side: double; shader: flat"
+                animation="property: scale; from: 1 1 1; to: 7.2 7.2 7.2; dur: 5200; loop: true; easing: easeOutQuad">
+      </a-sphere>
+
+      <a-ring radius-inner="3.6" radius-outer="4.2" position="0 1.6 -10" rotation="90 0 0"
+              material="color: #FF8F7A; transparent: true; opacity: 0.22; side: double; shader: flat"
+              animation="property: scale; from: 0.6 0.6 0.6; to: 2.1 2.1 2.1; dur: 5200; loop: true; easing: easeOutQuad">
+      </a-ring>
+
+      <a-sphere position="4.2 3.3 -13" radius="0.16" color="#FFB49C"></a-sphere>
+      <a-sphere position="-4.8 0.8 -13.8" radius="0.12" color="#FFD6C0"></a-sphere>
+      <a-sphere position="2.4 -0.1 -11.7" radius="0.10" color="#FFC6A8"></a-sphere>
+
+      <a-text value="SUPERNOVA TIMELINE&#10;Shock front expansion" position="0 4.6 -8"
+              align="center" color="#FFD0B0" width="5.2" opacity="0.92"></a-text>
+    </a-entity>
+
+    <!-- =====================================================
+         SCENE 8 — SOLAR FLARE / CME CORRIDOR
+         ===================================================== -->
+    <a-entity id="scene-cme" class="scene-group" visible="false">
+      <a-sky color="#05060D"></a-sky>
+      <a-light type="ambient" color="#2A2220" intensity="0.28"></a-light>
+
+      <a-entity position="-7 1.4 -17">
+        <a-sphere radius="3.2" color="#FDB813"
+                  material="emissive: #FF9900; emissiveIntensity: 1.35; shader: flat"></a-sphere>
+        <a-sphere radius="3.7" color="#FF7A30"
+                  material="emissive: #FF6B2B; emissiveIntensity: 0.7; shader: flat; transparent: true; opacity: 0.2">
+        </a-sphere>
+        <a-light type="point" color="#FFF4D6" intensity="2.8" distance="120"></a-light>
+      </a-entity>
+
+      <a-sphere position="7 1.4 -18" radius="1.5" pro-tex="name: earth"></a-sphere>
+
+      <a-entity position="-5.8 1.6 -16.8">
+        <a-torus radius="1.6" radius-tubular="0.08" rotation="30 20 0"
+                 material="color: #FF8D52; transparent: true; opacity: 0.46; side: double; shader: flat"
+                 animation="property: position; from: -5.8 1.6 -16.8; to: 3.2 1.8 -17.8; dur: 5200; loop: true; easing: linear">
+        </a-torus>
+        <a-sphere radius="0.18" color="#FFC087"
+                  animation="property: position; from: 0 0 0; to: 8.6 0.1 -0.9; dur: 5200; loop: true; easing: linear">
+        </a-sphere>
+        <a-sphere radius="0.12" color="#FFD0AE"
+                  animation="property: position; from: 0.6 -0.2 0.3; to: 8.2 0.25 -0.6; dur: 4700; loop: true; easing: linear">
+        </a-sphere>
+      </a-entity>
+
+      <a-text value="SOLAR FLARE + CME&#10;Sun-to-Earth corridor" position="0 4.4 -11"
+              align="center" color="#FFD48A" width="5.4" opacity="0.92"></a-text>
+    </a-entity>
+
   </a-scene>
 
+  <script src="api.js"></script>
   <script src="vr.js"></script>
-  <script src="orbit-ai.js"></script>
+  <script src="session.js"></script>
 
 </body>
 </html>

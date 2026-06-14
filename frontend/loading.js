@@ -1,4 +1,6 @@
 const LOGIN_PAGE = 'index.html';
+const DASHBOARD_PAGE = 'workshops.html';
+const AUTH_TOKEN_KEY = 'orbitAuthToken';
 
 const app = document.getElementById('app');
 const starsCanvas = document.getElementById('stars-canvas');
@@ -23,7 +25,7 @@ let redirecting = false;
 const STATUS = [
   [0, 'Reading the starfield'],
   [1400, 'Event horizon approaching'],
-  [2900, 'Opening Orbit']
+  [2900, 'Opening SkyFolk']
 ];
 
 const CONSTELLATIONS = [
@@ -272,7 +274,7 @@ function loop(ts) {
     app.style.opacity = '0';
     app.style.filter = 'blur(10px)';
     setTimeout(() => {
-      window.location.href = LOGIN_PAGE;
+      window.location.href = localStorage.getItem(AUTH_TOKEN_KEY) ? DASHBOARD_PAGE : LOGIN_PAGE;
     }, 740);
   }
 

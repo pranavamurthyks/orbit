@@ -3,9 +3,8 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Orbit - Community</title>
+  <title>SkyFolk - Community</title>
   <link rel="stylesheet" href="community.css" />
-  <link rel="stylesheet" href="orbit-ai.css" />
 </head>
 <body data-host-stage="0">
   <canvas id="starCanvas"></canvas>
@@ -15,7 +14,7 @@
   </div>
 
   <nav class="navbar">
-    <a class="nav-logo" href="photography.html">✦ Orbit</a>
+    <a class="nav-logo" href="photography.html">✦ SkyFolk</a>
     <div class="nav-links">
       <a href="loading.html">Launch</a>
       <a href="workshops.html">Dashboard</a>
@@ -24,6 +23,7 @@
       <a href="vr.html">VR</a>
       <a href="long-horizon-exchange.html">Time Dilation</a>
       <a href="community.html" class="active">Community</a>
+      <a href="passport.html">Passport</a>
     </div>
     <div class="nav-user">
       <span class="stardust-pill">✦ <span id="navStardust">1,240</span> pts</span>
@@ -32,7 +32,7 @@
         <div class="profile-head">
           <div class="profile-avatar">CG</div>
           <div>
-            <div class="profile-name">Cosmic Guest</div>
+            <div class="profile-name">SkyFolk Guest</div>
             <div class="profile-role">Explorer Level 3</div>
           </div>
         </div>
@@ -320,6 +320,19 @@
                 <button class="submit-btn join-submit" type="submit">Join session</button>
               </form>
 
+              <div class="host-actions hidden" id="hostActions">
+                <div class="panel-head compact">
+                  <div class="section-label">Host controls</div>
+                  <span class="crew-count">Funding lifecycle</span>
+                </div>
+                <div class="host-action-grid">
+                  <button class="submit-btn host-action-btn" id="summaryBtn" type="button">Post spend summary</button>
+                  <button class="submit-btn host-action-btn ghost" id="cancelBtn" type="button">Cancel session</button>
+                </div>
+              </div>
+
+              <div class="funding-summary hidden" id="fundingSummary"></div>
+
               <div class="crew-block">
                 <div class="panel-head compact">
                   <div class="section-label">Participants + gear</div>
@@ -336,7 +349,8 @@
 
   <div class="toast hidden" id="toast"></div>
 
+  <script src="api.js"></script>
   <script src="community.js"></script>
-  <script src="orbit-ai.js"></script>
+  <script src="session.js"></script>
 </body>
 </html>

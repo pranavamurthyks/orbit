@@ -6,6 +6,7 @@ let W, H, stars = [], constellations = [];
 let mouse = { x: -999, y: -999 };
 let cursorAngle = -20;
 const HOVER_RADIUS = 104;
+const api = window.SkyFolkApi;
 
 const CONSTELLATION_BLUEPRINTS = [
   {
@@ -347,10 +348,15 @@ let photos = PHOTO_SEEDS.map((p, i) => ({
   given: false,
 }));
 
-let myStardust = 1240;
+let myStardust = getInitialStardust();
 let activeFilter = 'all';
 let currentLbId  = null;
 let selectedGiftAmount = 10;
+let communityMeta = {
+  weeklyChallenge: null,
+  darkSkySpots: [],
+  communityFavoriteCount: 0,
+};
 const categoryLabels = {
   nebula: 'Nebula',
   planet: 'Planet',
@@ -415,7 +421,7 @@ function filteredPhotos() {
     : photos.filter(p => p.category === activeFilter);
 
   if (sort === 'stardust') list.sort((a,b) => b.stardust - a.stardust);
-  else if (sort === 'mine') list = list.filter(p => p.author === 'Jeff Herbert');
+  else if (sort === 'mine') list = list.filter(p => p.author === getCurrentUserName());
   else list.sort((a,b) => getPhotoTime(b) - getPhotoTime(a));
 
   return list;
@@ -432,6 +438,30 @@ function updateStats() {
   const total = photos.reduce((sum, photo) => sum + photo.stardust, 0);
   document.getElementById('totalPhotos').textContent = photos.length;
   document.getElementById('totalStardust').textContent = (total / 1000).toFixed(1) + 'k';
+  document.getElementById('favoriteCount').textContent = communityMeta.communityFavoriteCount || 0;
+}
+
+function renderCommunityMeta() {
+  const challenge = communityMeta.weeklyChallenge;
+  const spots = Array.isArray(communityMeta.darkSkySpots) ? communityMeta.darkSkySpots : [];
+
+  document.getElementById('challengeTitle').textContent = challenge?.title || 'Community challenge';
+  document.getElementById('challengePrompt').textContent = challenge?.prompt || 'Upload a real-sky moment connected to this week’s observing theme.';
+  document.getElementById('favoriteSummary').textContent =
+    `${communityMeta.communityFavoriteCount || 0} gallery shots have crossed the community-favorite threshold.`;
+
+  const spotList = document.getElementById('spotList');
+  if (!spots.length) {
+    spotList.innerHTML = '<span>No location data yet. Upload from your next dark-sky trip.</span>';
+    return;
+  }
+
+  spotList.innerHTML = spots.map(spot => `
+    <div class="spot-item">
+      <strong>${spot.name}</strong>
+      <span>${spot.submissions} shots · ${spot.stardust} ✦</span>
+    </div>
+  `).join('');
 }
 
 function renderGrid() {
@@ -439,6 +469,7 @@ function renderGrid() {
   const list = filteredPhotos();
   grid.innerHTML = '';
   updateStats();
+  renderCommunityMeta();
 
   if (list.length === 0) {
     grid.innerHTML = '<div style="color:rgba(180,190,230,0.4);font-size:14px;padding:48px;text-align:center;grid-column:1/-1;">No photos in this category yet. Be the first to upload!</div>';
@@ -453,7 +484,8 @@ function renderGrid() {
       <img src="${p.imgUrl}" alt="${p.title}" style="height:${p.imgH}px" loading="lazy" />
       <div class="card-body">
         <div class="card-title">${p.title}</div>
-        <div class="card-category">${formatCategory(p.category)}</div>
+        <div class="card-category${p.communityFavorite ? ' favorite' : ''}">${p.communityFavorite ? 'Community Favorite' : formatCategory(p.category)}</div>
+        ${p.locationName ? `<div class="card-location">${p.locationName}</div>` : ''}
         <div class="card-meta">
           <div class="card-author">
             <div class="mini-avatar">${p.initials}</div>
@@ -577,7 +609,7 @@ customStardust.addEventListener('input', () => {
 });
 
 function updateProfileStats() {
-  const userUploads = photos.filter(photo => photo.author === 'Jeff Herbert').length;
+  const userUploads = photos.filter(photo => photo.author === getCurrentUserName()).length;
   const userGiven = photos.filter(photo => photo.given).length;
 
   document.getElementById('profileStardust').textContent = myStardust.toLocaleString();
@@ -585,7 +617,7 @@ function updateProfileStats() {
   document.getElementById('profileGiven').textContent = userGiven;
 }
 
-document.getElementById('lbStarBtn').addEventListener('click', () => {
+document.getElementById('lbStarBtn').addEventListener('click', async () => {
   if (currentLbId === null) return;
   const p = photos.find(x => x.id === currentLbId);
   if (!p) return;
@@ -606,24 +638,28 @@ document.getElementById('lbStarBtn').addEventListener('click', () => {
     return;
   }
 
-  p.given    = true;
-  p.stardust += cost;
-  myStardust -= cost;
+  try {
+    const result = await api.post(`/photos/${p.id}/gift`, { amount: cost });
+    p.given = true;
+    p.stardust = result.photo.stardust;
+    myStardust = result.balance;
+    updateLocalBalance(result.balance);
 
-  // Update UI
-  document.getElementById('myStardust').textContent = myStardust.toLocaleString();
-  document.getElementById('lbStarCount').textContent = p.stardust;
-  updateProfileStats();
-  const btn = document.getElementById('lbStarBtn');
-  btn.classList.add('given');
-  updateGiftControls(true);
+    document.getElementById('myStardust').textContent = myStardust.toLocaleString();
+    document.getElementById('lbStarCount').textContent = p.stardust;
+    updateProfileStats();
+    const btn = document.getElementById('lbStarBtn');
+    btn.classList.add('given');
+    updateGiftControls(true);
 
-  // Update total
-  const total = photos.reduce((s, x) => s + x.stardust, 0);
-  document.getElementById('totalStardust').textContent = (total / 1000).toFixed(1) + 'k';
+    const total = photos.reduce((s, x) => s + x.stardust, 0);
+    document.getElementById('totalStardust').textContent = (total / 1000).toFixed(1) + 'k';
 
-  renderGrid();
-  showToast(`✦ +${cost} stardust sent to ${p.author}!`, 'gold');
+    renderGrid();
+    showToast(`✦ +${cost} stardust sent to ${p.author}!`, 'gold');
+  } catch (error) {
+    showToast(error.message);
+  }
 });
 
 // ── Upload modal ──────────────────────────────────────────────────────────
@@ -685,7 +721,7 @@ function previewFile(file) {
   reader.readAsDataURL(file);
 }
 
-document.getElementById('submitUpload').addEventListener('click', () => {
+document.getElementById('submitUpload').addEventListener('click', async () => {
   const title    = document.getElementById('photoTitle').value.trim();
   const selectedCategory = photoCategory.value;
   const customCategoryLabel = newCategory.value.trim();
@@ -693,6 +729,8 @@ document.getElementById('submitUpload').addEventListener('click', () => {
     ? slugifyCategory(customCategoryLabel)
     : selectedCategory;
   const desc     = document.getElementById('photoDesc').value.trim();
+  const locationName = document.getElementById('photoLocation').value.trim();
+  const cameraLabel = document.getElementById('photoCamera').value.trim();
   const imgSrc   = previewImg.src;
 
   if (!title) { showToast('Please add a title for your photo'); return; }
@@ -710,29 +748,26 @@ document.getElementById('submitUpload').addEventListener('click', () => {
     ensureCategoryOption(category, customCategoryLabel);
   }
 
-  const newPhoto = {
-    id:       photos.length,
-    seed:     'user' + photos.length,
-    category,
-    title,
-    author:   'Jeff Herbert',
-    initials: 'JH',
-    stardust: 0,
-    desc:     desc || 'Uploaded by community.',
-    date:     'Today',
-    imgH:     220,
-    imgUrl:   imgSrc,
-    given:    false,
-  };
-
-  photos.unshift(newPhoto);
-  closeModal();
-  renderGrid();
-  showToast('✦ Photo published to the community!', 'gold');
-  myStardust += 25;
-  document.getElementById('myStardust').textContent = myStardust.toLocaleString();
-  updateProfileStats();
-  document.getElementById('totalPhotos').textContent = photos.length;
+  try {
+    const result = await api.post('/photos', {
+      title,
+      category,
+      description: desc || 'Uploaded by the SkyFolk community.',
+      locationName,
+      cameraLabel,
+      challengeTag: communityMeta.weeklyChallenge?.tag || '',
+      imageUrl: imgSrc,
+    });
+    myStardust = result.balance;
+    updateLocalBalance(result.balance);
+    document.getElementById('myStardust').textContent = myStardust.toLocaleString();
+    closeModal();
+    await loadPhotos();
+    showToast('✦ Photo published to the community!', 'gold');
+    updateProfileStats();
+  } catch (error) {
+    showToast(error.message);
+  }
 });
 
 // ── Profile menu ──────────────────────────────────────────────────────────
@@ -794,5 +829,44 @@ function showToast(msg, type = '') {
 }
 
 // ── Init ──────────────────────────────────────────────────────────────────
-renderGrid();
+loadPhotos();
 updateProfileStats();
+
+async function loadPhotos() {
+  try {
+    const result = await api.get('/photos');
+    communityMeta = {
+      weeklyChallenge: result.weeklyChallenge || null,
+      darkSkySpots: result.darkSkySpots || [],
+      communityFavoriteCount: result.communityFavoriteCount || 0,
+    };
+    photos = result.photos.map((photo, index) => ({
+      ...photo,
+      imgH: heights[index % heights.length],
+    }));
+  } catch (error) {
+    console.error(error);
+  }
+
+  renderGrid();
+  updateProfileStats();
+}
+
+function updateLocalBalance(balance) {
+  const user = api.getUser();
+  if (!user) return;
+  user.stardustBalance = balance;
+  api.setUser(user);
+}
+
+function getCurrentUserName() {
+  return api.getUser()?.displayName || 'SkyFolk Guest';
+}
+function getInitialStardust() {
+  try {
+    const user = JSON.parse(localStorage.getItem('orbitCurrentUser') || 'null');
+    return Number(user?.stardustBalance ?? 1240);
+  } catch {
+    return 1240;
+  }
+}

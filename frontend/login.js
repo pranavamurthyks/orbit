@@ -6,8 +6,10 @@ const spaceCursor = document.getElementById('spaceCursor');
 let W, H, stars = [], mouse = { x: -999, y: -999 };
 let cursorAngle = -20;
 const HOVER_RADIUS = 104;
-const AUTH_USERS_KEY = 'orbitDemoUsers';
 const AUTH_SESSION_KEY = 'orbitCurrentUser';
+const AUTH_TOKEN_KEY = 'orbitAuthToken';
+const API_BASE = localStorage.getItem('orbitApiBase') ||
+  (window.location.protocol === 'file:' ? 'http://127.0.0.1:3000/api' : `${window.location.origin}/api`);
 
 // Constellation definitions as relative [0-1] coords
 const CONSTELLATIONS = [
@@ -247,79 +249,70 @@ function switchTab(tab) {
   clearMessage();
 }
 
-function handleLogin() {
+async function handleLogin() {
   const email = getInputValue('loginEmail').toLowerCase();
   const password = getInputValue('loginPassword');
-  const users = readUsers();
-  const user = users.find(item => item.email === email);
 
   if (!isValidEmail(email) || !password) {
     return rejectAuth('Enter a valid email and password.');
   }
 
-  if (!user || user.password !== password) {
-    return rejectAuth('No matching Orbit account found. Check your details or create one.');
+  try {
+    showMessage('Checking your SkyFolk account...', 'success');
+    const payload = await postAuth('/auth/login', { email, password });
+    writeSession(payload);
+    showMessage(`Welcome back, ${payload.user.displayName}. Opening SkyFolk dashboard...`, 'success');
+    setTimeout(() => {
+      window.location.href = 'workshops.html';
+    }, 450);
+  } catch (error) {
+    rejectAuth(error.message || 'No matching SkyFolk account found. Check your details or create one.');
   }
-
-  writeSession(user);
-  showMessage(`Welcome back, ${user.name}. Launching Orbit...`, 'success');
-  setTimeout(() => {
-    window.location.href = 'photography.html';
-  }, 450);
 }
 
-function handleSignup() {
+async function handleSignup() {
   const name = getInputValue('signupName');
   const email = getInputValue('signupEmail').toLowerCase();
   const password = getInputValue('signupPassword');
-  const users = readUsers();
 
   if (name.length < 2) {
-    return rejectAuth('Add your full name so your Orbit profile has a callsign.');
+    return rejectAuth('Add your full name so your SkyFolk profile has a callsign.');
   }
 
   if (!isValidEmail(email)) {
     return rejectAuth('Use a valid email address.');
   }
 
-  if (password.length < 6) {
-    return rejectAuth('Password must be at least 6 characters.');
+  if (password.length < 8) {
+    return rejectAuth('Password must be at least 8 characters.');
   }
 
-  if (users.some(item => item.email === email)) {
-    return rejectAuth('That email already has an Orbit account. Log in instead.');
+  try {
+    showMessage('Creating your SkyFolk account...', 'success');
+    const payload = await postAuth('/auth/register', {
+      username: buildUsername(email),
+      email,
+      password,
+      displayName: name
+    });
+    writeSession(payload);
+    showMessage(`Account created. Welcome aboard, ${payload.user.displayName}.`, 'success');
+    setTimeout(() => {
+      window.location.href = 'workshops.html';
+    }, 650);
+  } catch (error) {
+    rejectAuth(error.message || 'Could not create your account right now.');
   }
-
-  const user = {
-    id: globalThis.crypto && crypto.randomUUID ? crypto.randomUUID() : `orbit-${Date.now()}`,
-    name,
-    email,
-    password,
-    createdAt: new Date().toISOString()
-  };
-
-  users.push(user);
-  localStorage.setItem(AUTH_USERS_KEY, JSON.stringify(users));
-  writeSession(user);
-  showMessage(`Account created. Welcome aboard, ${name}.`, 'success');
-  setTimeout(() => {
-    window.location.href = 'photography.html';
-  }, 650);
 }
 
 function handleForgotPassword() {
   const email = getInputValue('loginEmail').toLowerCase();
-  const user = readUsers().find(item => item.email === email);
 
   if (!isValidEmail(email)) {
     return rejectAuth('Enter your account email first.');
   }
 
-  if (!user) {
-    return rejectAuth('No local demo account exists for that email yet.');
-  }
-
-  showMessage('This demo stores accounts in this browser. Create a new account if you need a fresh password.', 'success');
+  showMessage('Password reset is not wired yet. For the hackathon build, create a new account or ask the backend team to reset it.', 'success');
 }
 
 function getInputValue(id) {
@@ -327,18 +320,29 @@ function getInputValue(id) {
   return input ? input.value.trim() : '';
 }
 
-function readUsers() {
-  try {
-    const users = JSON.parse(localStorage.getItem(AUTH_USERS_KEY) || '[]');
-    return Array.isArray(users) ? users : [];
-  } catch {
-    return [];
+async function postAuth(path, body) {
+  const response = await fetch(`${API_BASE}${path}`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body)
+  });
+  const data = await response.json().catch(() => ({}));
+
+  if (!response.ok) {
+    throw new Error(data.message || `Request failed with status ${response.status}`);
   }
+
+  return data;
 }
 
-function writeSession(user) {
-  const { password, ...safeUser } = user;
-  localStorage.setItem(AUTH_SESSION_KEY, JSON.stringify(safeUser));
+function writeSession(payload) {
+  localStorage.setItem(AUTH_TOKEN_KEY, payload.accessToken);
+  localStorage.setItem(AUTH_SESSION_KEY, JSON.stringify(payload.user));
+}
+
+function buildUsername(email) {
+  const base = email.split('@')[0].toLowerCase().replace(/[^a-z0-9_]/g, '').slice(0, 18) || 'skyfolk';
+  return `${base}_${Date.now().toString(36).slice(-5)}`;
 }
 
 function isValidEmail(email) {

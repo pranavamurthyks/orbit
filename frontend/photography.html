@@ -3,9 +3,8 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Orbit — Space Photography</title>
+  <title>SkyFolk — Space Photography</title>
   <link rel="stylesheet" href="photography.css" />
-  <link rel="stylesheet" href="orbit-ai.css" />
 </head>
 <body>
 
@@ -17,7 +16,7 @@
 
   <!-- Navbar -->
   <nav class="navbar">
-    <a class="nav-logo" href="photography.html">✦ Orbit</a>
+    <a class="nav-logo" href="photography.html">✦ SkyFolk</a>
     <div class="nav-links">
       <a href="loading.html">Launch</a>
       <a href="workshops.html">Dashboard</a>
@@ -26,6 +25,7 @@
       <a href="vr.html">VR</a>
       <a href="long-horizon-exchange.html">Time Dilation</a>
       <a href="community.html">Community</a>
+      <a href="passport.html">Passport</a>
     </div>
     <div class="nav-user">
       <span class="stardust-pill">
@@ -37,7 +37,7 @@
         <div class="profile-head">
           <div class="profile-avatar">CG</div>
           <div>
-            <div class="profile-name">Cosmic Guest</div>
+            <div class="profile-name">SkyFolk Guest</div>
             <div class="profile-role">Explorer Level 3</div>
           </div>
         </div>
@@ -64,14 +64,33 @@
   <header class="page-header">
     <div class="header-text">
       <h1>Space Photography</h1>
-      <p>Curated from NASA's image library, organized by category</p>
+      <p>Community astrophotography, weekly sky challenges, and Stardust-backed recognition.</p>
     </div>
     <div class="header-stats">
-      <div class="stat-pill"><span class="stat-val" id="totalPhotos">12</span><span class="stat-lbl">NASA photos</span></div>
+      <div class="stat-pill"><span class="stat-val" id="totalPhotos">12</span><span class="stat-lbl">Community photos</span></div>
       <div class="stat-pill"><span class="stat-val" id="totalStardust">7.4k</span><span class="stat-lbl">Stardust given</span></div>
-      <div class="stat-pill"><span class="stat-val">5</span><span class="stat-lbl">Categories</span></div>
+      <div class="stat-pill"><span class="stat-val" id="favoriteCount">0</span><span class="stat-lbl">Favorites</span></div>
     </div>
   </header>
+
+  <section class="photo-community">
+    <article class="community-card">
+      <span class="community-label">Weekly challenge</span>
+      <strong id="challengeTitle">Loading challenge...</strong>
+      <p id="challengePrompt">Pulling this week’s real-sky prompt.</p>
+    </article>
+    <article class="community-card">
+      <span class="community-label">Dark-sky map</span>
+      <div class="spot-list" id="spotList">
+        <span>Loading top locations...</span>
+      </div>
+    </article>
+    <article class="community-card">
+      <span class="community-label">Community favorite</span>
+      <strong id="favoriteSummary">Loading gallery momentum...</strong>
+      <p>Photos that attract meaningful Stardust support unlock visible recognition in the gallery.</p>
+    </article>
+  </section>
 
   <!-- Filter bar -->
   <div class="filter-bar">
@@ -147,6 +166,14 @@
           <label>Description <span class="optional">(optional)</span></label>
           <textarea id="photoDesc" placeholder="Equipment used, location, exposure settings..." rows="3"></textarea>
         </div>
+        <div class="field-group">
+          <label>Location <span class="optional">(optional)</span></label>
+          <input type="text" id="photoLocation" placeholder="e.g. Hanle, Ladakh" maxlength="60" />
+        </div>
+        <div class="field-group">
+          <label>Camera or rig <span class="optional">(optional)</span></label>
+          <input type="text" id="photoCamera" placeholder="e.g. Pixel 9 + tripod" maxlength="60" />
+        </div>
       </div>
 
       <button class="btn-upload" id="submitUpload">Publish to Community</button>
@@ -198,7 +225,8 @@
   <!-- Toast -->
   <div class="toast hidden" id="toast"></div>
 
+  <script src="api.js"></script>
   <script src="photography.js"></script>
-  <script src="orbit-ai.js"></script>
+  <script src="session.js"></script>
 </body>
 </html>

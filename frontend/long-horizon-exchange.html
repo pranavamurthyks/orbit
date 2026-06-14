@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Orbit — Time Dilation</title>
+<title>SkyFolk — Time Dilation</title>
 <link href="https://fonts.googleapis.com/css2?family=Newsreader:ital,wght@0,400;0,600;1,400&family=Space+Mono:wght@400;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 <style>
@@ -189,6 +189,15 @@ input[type=range]:focus-visible{outline:2px solid var(--teal);outline-offset:6px
 .go:disabled{opacity:.3;cursor:not-allowed;transform:none}
 .go:focus-visible{outline:2px solid var(--teal);outline-offset:3px}
 .hint{font-size:.72rem;opacity:.4;font-family:var(--mono);margin-top:7px}
+.history-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:12px}
+.history-card{background:rgba(5,8,28,.72);border:1px solid var(--hairline);border-radius:14px;padding:14px;display:grid;gap:7px}
+.history-kicker{font-family:var(--mono);font-size:.62rem;opacity:.5;text-transform:uppercase;letter-spacing:.1em}
+.history-card strong{font-family:var(--serif);font-size:.95rem;color:var(--text)}
+.history-card span{font-family:var(--mono);font-size:.72rem;color:var(--text-muted)}
+.history-empty{font-family:var(--mono);font-size:.74rem;opacity:.5}
+.activity-card{background:rgba(5,8,28,.72);border:1px solid var(--hairline);border-radius:14px;padding:14px;display:grid;gap:7px}
+.activity-card strong{font-family:var(--mono);font-size:.7rem;letter-spacing:.08em;text-transform:uppercase;color:var(--teal)}
+.activity-card span{font-size:.83rem;line-height:1.55;color:var(--text)}
 
 /* Trip overlay */
 #trip-ov{display:none;position:fixed;inset:0;background:rgba(11,14,26,.97);z-index:100;flex-direction:column;align-items:center;justify-content:center;gap:28px;padding:24px}
@@ -242,7 +251,6 @@ a,button,select,input,textarea,label,.tab,.pbtn,.rng,.go,.next{cursor:none}
 body *{cursor:none!important}
 @media(pointer:coarse){body,a,button,select,input,textarea,label,.tab,.pbtn,.rng,.go,.next{cursor:auto}.space-cursor{display:none}body *{cursor:auto!important}}
 </style>
-<link rel="stylesheet" href="orbit-ai.css">
 </head>
 <body>
 <canvas id="starfield"></canvas>
@@ -252,7 +260,7 @@ body *{cursor:none!important}
 </div>
 
 <nav class="navbar">
-  <a class="nav-logo" href="photography.html">✦ Orbit</a>
+  <a class="nav-logo" href="photography.html">✦ SkyFolk</a>
   <div class="nav-links">
     <a href="loading.html">Launch</a>
     <a href="workshops.html">Dashboard</a>
@@ -261,6 +269,7 @@ body *{cursor:none!important}
     <a href="vr.html">VR</a>
     <a href="long-horizon-exchange.html" class="active">Time Dilation</a>
     <a href="community.html">Community</a>
+    <a href="passport.html">Passport</a>
   </div>
   <div class="nav-user">
     <span class="stardust-pill">✦ <span id="navStardust">500</span> pts</span>
@@ -269,7 +278,7 @@ body *{cursor:none!important}
       <div class="profile-head">
         <div class="profile-avatar">CG</div>
         <div>
-          <div class="profile-name">Cosmic Guest</div>
+          <div class="profile-name">SkyFolk Guest</div>
           <div class="profile-role">Explorer Level 3</div>
         </div>
       </div>
@@ -295,7 +304,7 @@ body *{cursor:none!important}
 <div class="wrap">
 
   <header class="topbar">
-    <div class="brand">✦ Orbit <small>/ Time Dilation</small></div>
+    <div class="brand">✦ SkyFolk <small>/ Time Dilation</small></div>
     <div class="topstats">
       <div class="tstat"><span class="lbl">Stardust</span><span class="val" id="sd">500 ✦</span></div>
       <div class="tstat"><span class="lbl">You've aged</span><span class="val t" id="ship-tot">0 days</span></div>
@@ -373,11 +382,25 @@ body *{cursor:none!important}
     <p class="hint">If everyone picks the same option, the payout shrinks. Contrarian bets pay more when correct.</p>
   </section>
 
+  <section class="sec">
+    <div class="sec-lbl">Shared board</div>
+    <div class="history-grid" id="market-activity">
+      <div class="history-empty">Live pilot activity will appear here as the shared markets move.</div>
+    </div>
+  </section>
+
   <!-- Depart -->
   <section class="sec">
     <div class="sec-lbl">Step 3 — Launch</div>
     <button class="go" id="go-btn" onclick="startTrip()" disabled>◈ ENGAGE DRIVE</button>
     <p class="hint" id="go-hint">Pick a prediction for each trend first.</p>
+  </section>
+
+  <section class="sec">
+    <div class="sec-lbl">Recent returns</div>
+    <div class="history-grid" id="trip-history">
+      <div class="history-empty">Your recent time-dilation trips will appear here.</div>
+    </div>
   </section>
 
 </div>
@@ -398,6 +421,7 @@ body *{cursor:none!important}
   <div class="res-inner" id="res-inner"></div>
 </div>
 
+<script src="api.js"></script>
 <script>
 /* ── Orbit starfield ── */
 (function(){
@@ -654,6 +678,7 @@ const profileBtn=document.getElementById('profileBtn');
 const profileMenu=document.getElementById('profileMenu');
 const navStardust=document.getElementById('navStardust');
 const profileStardust=document.getElementById('profileStardust');
+const api=window.SkyFolkApi;
 
 function closeProfileMenu(){
   profileMenu.classList.add('hidden');
@@ -672,9 +697,18 @@ document.addEventListener('keydown',e=>{if(e.key==='Escape')closeProfileMenu();}
 
 /* ── State ── */
 let S={
-  stardust:500, shipDaysTotal:0, homeYrsTotal:0,
+  stardust:getInitialStardust(), shipDaysTotal:0, homeYrsTotal:0,
   mode:'speed', dilationFactor:2.29, shipDays:1, homeYrs:.006
 };
+
+function getInitialStardust(){
+  try{
+    const user=JSON.parse(localStorage.getItem('orbitCurrentUser')||'null');
+    return Number(user?.stardustBalance??500);
+  }catch{
+    return 500;
+  }
+}
 
 const BODIES={
   ns:{mass:3.976e30},  // neutron star ~2 solar masses
@@ -768,11 +802,146 @@ const YR0=2010,YR1=2025;
 let markets=TRENDS.map(t=>({
   ...t,
   pools:[150+Math.random()*100,200+Math.random()*100,120+Math.random()*80],
+  sentiment:0,
   pick:null,
   stake:25,
   chart:null
 }));
 let poolTimer=null;
+let recentTrips=[];
+let marketActivity=[];
+let marketStream=null;
+let syncTimer=null;
+
+function mergeStaticModel(market,index){
+  const fallback=TRENDS[index]||TRENDS[0];
+  return {
+    unit:'index',
+    model:fallback?.model||'lin',
+    growthRate:fallback?.growthRate||.12,
+    period:fallback?.period||11,
+    amp:fallback?.amp||120,
+    base:fallback?.base||60,
+    rate:fallback?.rate||180,
+    ...market
+  };
+}
+
+function applyMarketSnapshot(snapshot){
+  const previous=new Map(markets.map(item=>[item.id,item]));
+  const incoming=Array.isArray(snapshot?.markets)?snapshot.markets:[];
+  if(!incoming.length)return;
+
+  markets=incoming.map((market,index)=>{
+    const existing=previous.get(market.key)||{};
+    return {
+      ...mergeStaticModel({
+        id:market.key,
+        title:market.title,
+        blurb:market.blurb,
+        data:market.data,
+        pools:market.pools,
+        sentiment:Number(market.sentiment||0),
+      },index),
+      pick:existing.pick??null,
+      stake:existing.stake??25,
+      chart:existing.chart??null,
+    };
+  });
+
+  marketActivity=Array.isArray(snapshot?.activity)?snapshot.activity:marketActivity;
+}
+
+async function loadBackendMarkets(){
+  if(!api)return;
+  try{
+    const result=await api.get('/markets');
+    applyMarketSnapshot(result);
+    recentTrips=Array.isArray(result.recentTrips)?result.recentTrips:[];
+    renderMarketActivity();
+    renderTripHistory();
+  }catch(error){
+    console.error(error);
+  }
+}
+
+function renderMarketActivity(){
+  const root=document.getElementById('market-activity');
+  if(!root)return;
+  if(!marketActivity.length){
+    root.innerHTML='<div class="history-empty">Live pilot activity will appear here as the shared markets move.</div>';
+    return;
+  }
+  root.innerHTML=marketActivity.slice(0,4).map(item=>`
+    <article class="activity-card">
+      <strong>${String(item.type||'market update').replace(/-/g,' ')}</strong>
+      <span>${item.text||'A pilot changed the shared pool.'}</span>
+    </article>
+  `).join('');
+}
+
+function connectMarketStream(){
+  if(marketStream||!window.EventSource||!api)return;
+  marketStream=new EventSource(`${api.API_BASE}/markets/stream`);
+  marketStream.onmessage=(event)=>{
+    try{
+      const snapshot=JSON.parse(event.data);
+      applyMarketSnapshot(snapshot);
+      buildMarkets();
+      renderMarketActivity();
+    }catch(error){
+      console.error(error);
+    }
+  };
+}
+
+function scheduleStakeSync(){
+  if(!api?.getToken())return;
+  clearTimeout(syncTimer);
+  syncTimer=setTimeout(syncCurrentStake,220);
+}
+
+async function syncCurrentStake(){
+  if(!api?.getToken())return;
+  const selections=markets
+    .filter(m=>m.pick!==null&&m.stake>0)
+    .map(m=>({marketKey:m.id,pick:m.pick,stake:m.stake}));
+
+  try{
+    if(!selections.length){
+      await api.post('/markets/clear',{});
+      return;
+    }
+
+    const snapshot=await api.post('/markets/sync',{
+      homeYears:S.homeYrs,
+      predictions:selections
+    });
+    applyMarketSnapshot(snapshot);
+    buildMarkets();
+    renderMarketActivity();
+  }catch(error){
+    console.error(error);
+  }
+}
+
+function renderTripHistory(){
+  const root=document.getElementById('trip-history');
+  if(!root)return;
+  if(!recentTrips.length){
+    root.innerHTML='<div class="history-empty">Your recent time-dilation trips will appear here.</div>';
+    return;
+  }
+  root.innerHTML=recentTrips.slice(0,4).map(trip=>`
+    <article class="history-card">
+      <div class="history-kicker">${trip.mode==='grav'?'Gravity well':'Speed run'}</div>
+      <strong>${Number(trip.homeYears||0).toFixed(2)} home years skipped</strong>
+      <span>${Number(trip.shipDays||0).toFixed(1)} ship days experienced</span>
+      <span>Drift score: ${Number(trip.driftScore||0).toFixed(2)}</span>
+      <span>${Number(trip.totalPayout||0)>0?`Payout +${trip.totalPayout} ✦`:'No payout on return'}</span>
+    </article>
+  `).join('');
+}
 
 function drawFallbackChart(canvas, data, color){
   const ctx=canvas.getContext('2d');
@@ -878,7 +1047,7 @@ function buildMarkets(){
     el.innerHTML=`
       <div class="mt">${m.title}</div>
       <div class="md">${m.blurb}</div>
-      <div class="mcur" id="mnote-${mi}">Now: <strong>${last.toLocaleString()} ${m.unit}</strong> · trip skips ~${S.homeYrs.toFixed(2)} yrs</div>
+      <div class="mcur" id="mnote-${mi}">Now: <strong>${last.toLocaleString()} ${m.unit}</strong> · trip skips ~${S.homeYrs.toFixed(2)} yrs · sentiment ${(m.sentiment*100).toFixed(1)}%</div>
       <div class="chart-box"><canvas id="ch-${mi}"></canvas></div>
       <div class="ranges" id="rng-${mi}">
         ${['📉 Goes down','📊 Stays on track','📈 Goes up'].map((lbl,ri)=>`
@@ -908,6 +1077,7 @@ function buildMarkets(){
   });
   startPool();
   checkGo();
+  renderMarketActivity();
 }
 
 function odds(m,ri){
@@ -931,19 +1101,16 @@ function refreshPool(mi){
 }
 function startPool(){
   if(poolTimer)clearInterval(poolTimer);
-  const ms=Math.max(600,2000-Math.min(1800,S.homeYrs*10));
-  poolTimer=setInterval(()=>markets.forEach((m,mi)=>{
-    m.pools=m.pools.map(p=>Math.max(10,p+(Math.random()-.4)*(S.homeYrs>10?7:2)));
-    refreshPool(mi);
-  }),ms);
+  poolTimer=null;
 }
 function syncMarketNotes(){
   markets.forEach((m,mi)=>{
     const el=document.getElementById(`mnote-${mi}`);
     const last=m.data[m.data.length-1];
-    if(el)el.textContent=`Now: ${last.toLocaleString()} ${m.unit} · trip skips ~${S.homeYrs.toFixed(2)} yrs`;
+    if(el)el.textContent=`Now: ${last.toLocaleString()} ${m.unit} · trip skips ~${S.homeYrs.toFixed(2)} yrs · sentiment ${(m.sentiment*100).toFixed(1)}%`;
   });
   startPool();
+  scheduleStakeSync();
 }
 function pick(mi,ri){
   markets[mi].pick=ri;
@@ -953,6 +1120,7 @@ function pick(mi,ri){
     el.classList.toggle('on',r===ri);
     el.setAttribute('aria-checked',r===ri);
   }
+  scheduleStakeSync();
   checkGo();
 }
 function totalStake(){
@@ -964,11 +1132,10 @@ function remainingStakeBudget(mi){
 function adjStake(mi,d){
   const m=markets[mi];
   const next=d>0?Math.min(remainingStakeBudget(mi),m.stake+d):Math.max(0,m.stake+d);
-  const applied=next-m.stake;
   m.stake=next;
   const el=document.getElementById(`sv-${mi}`);
   if(el)el.textContent=m.stake;
-  if(applied>0&&m.pick!=null){m.pools[m.pick]+=applied;refreshPool(mi);}
+  scheduleStakeSync();
   checkGo();
 }
 function checkGo(){
@@ -1076,14 +1243,12 @@ function animTrip(shipDays,factor,cb){
 function startTrip(){
   if(markets.some(m=>m.pick===null))return;
   if(totalStake()>S.stardust)return;
-  markets.forEach(m=>{S.stardust-=m.stake;});
-  showSD(true);
   if(poolTimer)clearInterval(poolTimer);
   animTrip(S.shipDays,S.dilationFactor,resolveTrip);
 }
 
 /* ── Resolution ── */
-function resolveTrip(){
+async function resolveTrip(){
   const hy=S.homeYrs;
   S.shipDaysTotal+=S.shipDays;
   S.homeYrsTotal+=hy;
@@ -1091,18 +1256,55 @@ function resolveTrip(){
     S.shipDaysTotal<365?`${S.shipDaysTotal.toFixed(1)} days`:`${(S.shipDaysTotal/365.25).toFixed(2)} yrs`;
   document.getElementById('home-tot').textContent=`${S.homeYrsTotal.toFixed(2)} yrs`;
 
-  const outcomes=markets.map(m=>{
-    const val=project(m,hy);
-    const bucket=classify(m,hy,val);
-    const won=bucket===m.pick;
-    const tot=m.pools.reduce((a,b)=>a+b,0);
-    const o=Math.max(1.1,tot/Math.max(1,m.pools[m.pick??0]));
-    return{m,val,bucket,won,payout:won?Math.round(m.stake*o):0};
-  });
-
-  const totalPayout=outcomes.reduce((a,o)=>a+o.payout,0);
-  S.stardust+=totalPayout;
-  S.stardust=Math.max(0,S.stardust);
+  let outcomes=[];
+  let totalPayout=0;
+  try{
+    const result=await api.post('/markets/trip',{
+      mode:S.mode,
+      shipDays:S.shipDays,
+      homeYears:S.homeYrs,
+      dilationFactor:S.dilationFactor,
+      predictions:markets.map(m=>({marketKey:m.id,pick:m.pick,stake:m.stake}))
+    });
+    totalPayout=result.trip.totalPayout;
+    S.stardust=result.balance;
+    if(api.getUser()){
+      const user=api.getUser();
+      user.stardustBalance=result.balance;
+      api.setUser(user);
+    }
+    recentTrips.unshift({
+      id:result.trip.id,
+      mode:S.mode,
+      shipDays:S.shipDays,
+      homeYears:S.homeYrs,
+      totalPayout:result.trip.totalPayout,
+      driftScore:result.trip.driftScore
+    });
+    renderTripHistory();
+    outcomes=markets.map(m=>{
+      const settled=result.trip.predictions.find(item=>item.marketKey===m.id);
+      return{
+        m,
+        val:settled?.actualValue??project(m,hy),
+        bucket:settled?.resolvedBucket??classify(m,hy,project(m,hy)),
+        won:Boolean(settled?.won),
+        payout:settled?.payout??0
+      };
+    });
+  }catch(error){
+    const fallback=markets.map(m=>{
+      const val=project(m,hy);
+      const bucket=classify(m,hy,val);
+      const won=bucket===m.pick;
+      const tot=m.pools.reduce((a,b)=>a+b,0);
+      const o=Math.max(1.1,tot/Math.max(1,m.pools[m.pick??0]));
+      return{m,val,bucket,won,payout:won?Math.round(m.stake*o):0};
+    });
+    outcomes=fallback;
+    totalPayout=fallback.reduce((a,o)=>a+o.payout,0);
+    S.stardust=Math.max(0,S.stardust-totalStake()+totalPayout);
+  }
   showSD(true);
 
   // Narrative lines
@@ -1111,7 +1313,7 @@ function resolveTrip(){
     const pct=((o.val-last)/last*100).toFixed(0);
     const sign=pct>0?'+':'';
     let txt='';
-    if(o.m.id==='sats')
+    if(o.m.id==='satellites')
       txt=o.val>last?`Orbital traffic hit ~${Math.round(o.val).toLocaleString()} satellites — congestion is now a real problem.`:`Growth stalled at ~${Math.round(o.val).toLocaleString()} satellites in orbit.`;
     else if(o.m.id==='solar')
       txt=Math.round(o.val)>120?`Solar maximum hit hard — peak sunspot count near ${Math.round(o.val)}, causing radio disruptions.`:Math.round(o.val)<30?`Solar minimum. The sun is quiet — great for deep-space observation.`:`Moderate solar activity (${Math.round(o.val)} sunspots). Cycle on track.`;
@@ -1170,8 +1372,8 @@ function nextTrip(){
     m.pick=null;
     m.stake=Math.min(25,remaining);
     remaining-=m.stake;
-    m.pools=[150+Math.random()*100,200+Math.random()*100,120+Math.random()*80];
   });
+  if(api?.getToken())api.post('/markets/clear',{}).catch(console.error);
   buildMarkets();
   S.mode==='speed'?doSpeed():doGrav();
   scrollTo({top:0,behavior:'smooth'});
@@ -1180,8 +1382,11 @@ function nextTrip(){
 /* ── Init ── */
 window.getOrbitTimeState=()=>({...S});
 doSpeed();
-buildMarkets();
+loadBackendMarkets().finally(()=>{
+  buildMarkets();
+  connectMarketStream();
+});
 </script>
-<script src="orbit-ai.js"></script>
+<script src="session.js"></script>
 </body>
 </html>

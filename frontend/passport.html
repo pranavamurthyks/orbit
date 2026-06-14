@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>SkyFolk — Cosmic Passport</title>
+  <link rel="stylesheet" href="login.css" />
+  <link rel="stylesheet" href="passport.css" />
+</head>
+<body>
+  <canvas id="starCanvas"></canvas>
+  <div class="space-cursor" id="spaceCursor" aria-hidden="true">
+    <span class="rocket-flame"></span>
+    <span class="rocket-body"></span>
+  </div>
+
+  <nav class="navbar">
+    <a class="nav-logo" href="photography.html">✦ SkyFolk</a>
+    <div class="nav-links">
+      <a href="loading.html">Launch</a>
+      <a href="workshops.html">Dashboard</a>
+      <a href="photography.html">Photography</a>
+      <a href="iss.html">ISS Tracker</a>
+      <a href="vr.html">VR</a>
+      <a href="long-horizon-exchange.html">Time Dilation</a>
+      <a href="community.html">Community</a>
+      <a href="passport.html" class="active">Passport</a>
+    </div>
+    <div class="nav-user">
+      <span class="stardust-pill">
+        <span class="star-icon">✦</span>
+        <span id="myStardust">0</span> pts
+      </span>
+      <button class="avatar" id="profileBtn" type="button" aria-label="Open profile menu" aria-expanded="false">SF</button>
+      <div class="profile-menu hidden" id="profileMenu">
+        <div class="profile-head">
+          <div class="profile-avatar">SF</div>
+          <div>
+            <div class="profile-name">SkyFolk Guest</div>
+            <div class="profile-role">Explorer Level 1</div>
+          </div>
+        </div>
+        <div class="profile-balance">
+          <span>Stardust Balance</span>
+          <strong><span id="profileStardust">0</span> pts</strong>
+        </div>
+        <div class="profile-actions">
+          <button type="button" data-profile-action="dashboard">Dashboard</button>
+          <button type="button" data-profile-action="settings">Profile Settings</button>
+        </div>
+        <button class="profile-signout" type="button" data-profile-action="signout">Sign out</button>
+      </div>
+    </div>
+  </nav>
+
+  <main class="passport-shell">
+    <header class="passport-header">
+      <div>
+        <div class="eyebrow">Real sky record</div>
+        <h1>Cosmic Passport</h1>
+        <p>Log real sightings, see how much Stardust they earned, and keep one personal timeline of the sky you actually stepped outside to watch.</p>
+      </div>
+      <div class="header-stats">
+        <div class="stat-card"><strong id="passportCount">0</strong><span>Logged sightings</span></div>
+        <div class="stat-card"><strong id="verifiedCount">0</strong><span>Verified entries</span></div>
+        <div class="stat-card"><strong id="balanceCount">0</strong><span>Stardust balance</span></div>
+      </div>
+    </header>
+
+    <div class="passport-grid">
+      <section class="stack">
+        <section class="panel">
+          <h2>Add observation</h2>
+          <p>Use this as the main earning loop for the demo: ISS passes, meteors, planets, moon phases, auroras, and deep-sky sessions.</p>
+          <form id="passportForm" class="stack" style="margin-top:14px">
+            <label class="field">
+              <span>Observation type</span>
+              <select id="entryType" required>
+                <option value="iss_pass">ISS pass</option>
+                <option value="meteor">Meteor</option>
+                <option value="planet">Planet</option>
+                <option value="moon">Moon</option>
+                <option value="milky_way">Milky Way</option>
+                <option value="aurora">Aurora</option>
+              </select>
+            </label>
+            <label class="field">
+              <span>Title</span>
+              <input id="entryTitle" type="text" placeholder="Saw the ISS cross the western sky" required />
+            </label>
+            <label class="field">
+              <span>Location</span>
+              <input id="entryLocation" type="text" placeholder="Cubbon Park, Bengaluru" />
+            </label>
+            <label class="field">
+              <span>When</span>
+              <input id="entryTimeLabel" type="text" placeholder="Tonight, 8:42 PM" />
+            </label>
+            <label class="field">
+              <span>Notes</span>
+              <textarea id="entryNotes" placeholder="Brightness, direction, weather, equipment, who was with you..."></textarea>
+            </label>
+            <button class="btn" type="submit">Save to Passport</button>
+          </form>
+          <div id="passportStatus" class="status"></div>
+        </section>
+
+        <section class="panel">
+          <h2>Tonight's sky</h2>
+          <p id="skyLabel">Loading sky overview...</p>
+          <div class="mini-grid">
+            <div class="mini-card"><strong id="moonLabel">-</strong><span>Moon phase</span></div>
+            <div class="mini-card"><strong>92.7 min</strong><span>One ISS orbit</span></div>
+          </div>
+        </section>
+
+        <section class="panel">
+          <h2>Cosmic Time Converter</h2>
+          <p>Self-report screen time and reframe it in space-scale units instead of device-scale habits.</p>
+          <div class="converter-row">
+            <input id="screenTimeMinutes" type="number" min="0" value="180" />
+            <button class="btn" type="button" onclick="document.getElementById('screenTimeMinutes').dispatchEvent(new Event('input'))">Convert</button>
+          </div>
+          <div id="converterResult" class="converter-result"></div>
+        </section>
+
+        <section class="panel">
+          <h2>Recent Stardust</h2>
+          <div id="ledgerList" class="ledger"></div>
+        </section>
+      </section>
+
+      <section class="panel">
+        <div class="entries-head">
+          <div>
+            <h2>Observation timeline</h2>
+            <p>Your sightings become the personal history layer behind the rest of the app.</p>
+          </div>
+        </div>
+        <div id="entryList" class="entry-list"></div>
+      </section>
+    </div>
+  </main>
+
+  <script src="api.js"></script>
+  <script src="login.js"></script>
+  <script src="passport.js"></script>
+  <script src="session.js"></script>
+</body>
+</html>

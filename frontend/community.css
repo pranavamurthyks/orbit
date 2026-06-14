@@ -1364,10 +1364,39 @@ button {
   margin-top: 2px;
 }
 
+.host-actions,
+.funding-summary,
 .crew-block {
   border-top: 1px solid var(--border);
   margin-top: 20px;
   padding-top: 18px;
+}
+
+.host-action-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.host-action-btn {
+  width: 100%;
+}
+
+.host-action-btn.ghost {
+  background: rgba(255,255,255,0.04);
+  color: var(--text-muted);
+  border: 1px solid var(--border);
+}
+
+.funding-summary {
+  border-radius: var(--radius-md);
+  background:
+    linear-gradient(135deg, rgba(100,130,255,0.12), rgba(110,231,216,0.08)),
+    rgba(255,255,255,0.03);
+  border: 1px solid rgba(150,170,255,0.18);
+  color: var(--text-muted);
+  font-size: 13px;
+  line-height: 1.55;
 }
 
 .crew-list {
