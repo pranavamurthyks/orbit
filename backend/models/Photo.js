@@ -32,6 +32,16 @@ const photoSchema = new mongoose.Schema(
             default: '',
             trim: true,
         },
+        location: {
+            lat: {
+                type: Number,
+                default: null,
+            },
+            lng: {
+                type: Number,
+                default: null,
+            },
+        },
         cameraLabel: {
             type: String,
             default: '',
@@ -61,6 +71,18 @@ const photoSchema = new mongoose.Schema(
             type: String,
             default: 'Today',
             trim: true,
+        },
+        capturedAt: {
+            type: Date,
+            default: null,
+        },
+        darkSkyScore: {
+            type: Number,
+            default: 0,
+        },
+        verificationHints: {
+            type: [String],
+            default: [],
         },
         stardustTotal: {
             type: Number,

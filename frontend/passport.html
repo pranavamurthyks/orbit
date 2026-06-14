@@ -93,8 +93,32 @@
               <input id="entryLocation" type="text" placeholder="Cubbon Park, Bengaluru" />
             </label>
             <label class="field">
-              <span>When</span>
+              <span>Observed at</span>
+              <input id="entryObservedAt" type="datetime-local" />
+            </label>
+            <div class="field-row">
+              <label class="field">
+                <span>Latitude</span>
+                <input id="entryLatitude" type="number" step="0.000001" placeholder="12.971600" />
+              </label>
+              <label class="field">
+                <span>Longitude</span>
+                <input id="entryLongitude" type="number" step="0.000001" placeholder="77.594600" />
+              </label>
+            </div>
+            <div class="field-actions">
+              <button class="btn secondary-btn" id="entryUseLocation" type="button">Use my location</button>
+              <span class="helper-copy" id="entryGeoStatus">Attach exact coordinates and time to make verification possible.</span>
+            </div>
+            <label class="field">
+              <span>When label</span>
               <input id="entryTimeLabel" type="text" placeholder="Tonight, 8:42 PM" />
+            </label>
+            <label class="field">
+              <span>Proof photo <span class="inline-muted">(optional)</span></span>
+              <select id="entryProofPhoto">
+                <option value="">No linked photo</option>
+              </select>
             </label>
             <label class="field">
               <span>Notes</span>

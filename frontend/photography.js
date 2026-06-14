@@ -338,6 +338,7 @@ let myStardust = getInitialStardust();
 let activeFilter = 'all';
 let currentLbId  = null;
 let selectedGiftAmount = 10;
+let selectedUploadFile = null;
 let communityMeta = {
   weeklyChallenge: null,
   darkSkySpots: [],
@@ -445,7 +446,7 @@ function renderCommunityMeta() {
   spotList.innerHTML = spots.map(spot => `
     <div class="spot-item">
       <strong>${spot.name}</strong>
-      <span>${spot.submissions} shots · ${spot.stardust} ✦</span>
+      <span>${spot.submissions} shots · ${spot.stardust} ✦ · dark-sky ${spot.avgDarkSky || 0}/100</span>
     </div>
   `).join('');
 }
@@ -670,11 +671,18 @@ function closeModal() {
   previewImg.classList.add('hidden');
   dropInner.style.display = 'flex';
   fileInput.value = '';
+  selectedUploadFile = null;
   document.getElementById('photoTitle').value = '';
   document.getElementById('photoDesc').value  = '';
   photoCategory.value = 'nebula';
   newCategory.value = '';
   newCategory.classList.add('hidden');
+  document.getElementById('photoCapturedAt').value = '';
+  document.getElementById('photoLocation').value = '';
+  document.getElementById('photoLatitude').value = '';
+  document.getElementById('photoLongitude').value = '';
+  document.getElementById('photoCamera').value = '';
+  document.getElementById('photoMetaStatus').textContent = 'EXIF or your device location can seed dark-sky scoring and Passport proofs.';
 }
 
 photoCategory.addEventListener('change', () => {
@@ -697,7 +705,67 @@ fileInput.addEventListener('change', () => {
   if (fileInput.files[0]) previewFile(fileInput.files[0]);
 });
 
+function toDateTimeLocalValue(value) {
+  const date = value instanceof Date ? value : new Date(value);
+  if (Number.isNaN(date.getTime())) return '';
+  const offset = date.getTimezoneOffset();
+  const local = new Date(date.getTime() - offset * 60000);
+  return local.toISOString().slice(0, 16);
+}
+
+async function hydratePhotoMetadataFromExif(file) {
+  const status = document.getElementById('photoMetaStatus');
+  if (!window.exifr?.parse) {
+    status.textContent = 'EXIF auto-read is unavailable in this browser. You can still enter capture metadata manually.';
+    return;
+  }
+
+  try {
+    const metadata = await window.exifr.parse(file, [
+      'GPSLatitude',
+      'GPSLongitude',
+      'DateTimeOriginal',
+      'DateTimeDigitized',
+      'CreateDate',
+      'Model'
+    ]);
+
+    if (!metadata) {
+      status.textContent = 'No EXIF metadata was found. Add capture time and location manually if you want verification.';
+      return;
+    }
+
+    if (typeof metadata.GPSLatitude === 'number') {
+      document.getElementById('photoLatitude').value = metadata.GPSLatitude.toFixed(6);
+    }
+    if (typeof metadata.GPSLongitude === 'number') {
+      document.getElementById('photoLongitude').value = metadata.GPSLongitude.toFixed(6);
+    }
+
+    const capturedAt = metadata.DateTimeOriginal || metadata.DateTimeDigitized || metadata.CreateDate;
+    if (capturedAt) {
+      document.getElementById('photoCapturedAt').value = toDateTimeLocalValue(capturedAt);
+    }
+
+    if (metadata.Model && !document.getElementById('photoCamera').value.trim()) {
+      document.getElementById('photoCamera').value = metadata.Model;
+    }
+
+    const seeded = [
+      typeof metadata.GPSLatitude === 'number' && typeof metadata.GPSLongitude === 'number' ? 'GPS' : null,
+      capturedAt ? 'capture time' : null,
+      metadata.Model ? 'camera model' : null,
+    ].filter(Boolean);
+    status.textContent = seeded.length
+      ? `Auto-filled ${seeded.join(', ')} from EXIF metadata.`
+      : 'No useful EXIF fields were present. Add capture time and location manually if you want verification.';
+  } catch (error) {
+    status.textContent = 'EXIF parsing failed. You can still enter capture time and location manually.';
+  }
+}
+
 function previewFile(file) {
+  selectedUploadFile = file;
   const reader = new FileReader();
   reader.onload = e => {
     previewImg.src = e.target.result;
@@ -705,7 +773,24 @@ function previewFile(file) {
     dropInner.style.display = 'none';
   };
   reader.readAsDataURL(file);
+  hydratePhotoMetadataFromExif(file);
 }
+
+document.getElementById('photoUseLocation').addEventListener('click', () => {
+  const status = document.getElementById('photoMetaStatus');
+  if (!navigator.geolocation) {
+    status.textContent = 'This browser cannot provide your location.';
+    return;
+  }
+  status.textContent = 'Fetching your location...';
+  navigator.geolocation.getCurrentPosition((position) => {
+    document.getElementById('photoLatitude').value = position.coords.latitude.toFixed(6);
+    document.getElementById('photoLongitude').value = position.coords.longitude.toFixed(6);
+    status.textContent = 'Location attached from your device.';
+  }, () => {
+    status.textContent = 'Location access was denied.';
+  });
+});
 
 document.getElementById('submitUpload').addEventListener('click', async () => {
   const title    = document.getElementById('photoTitle').value.trim();
@@ -717,6 +802,9 @@ document.getElementById('submitUpload').addEventListener('click', async () => {
   const desc     = document.getElementById('photoDesc').value.trim();
   const locationName = document.getElementById('photoLocation').value.trim();
   const cameraLabel = document.getElementById('photoCamera').value.trim();
+  const capturedAt = document.getElementById('photoCapturedAt').value;
+  const latitude = document.getElementById('photoLatitude').value.trim();
+  const longitude = document.getElementById('photoLongitude').value.trim();
   const imgSrc   = previewImg.src;
 
   if (!title) { showToast('Please add a title for your photo'); return; }
@@ -743,6 +831,9 @@ document.getElementById('submitUpload').addEventListener('click', async () => {
       cameraLabel,
       challengeTag: communityMeta.weeklyChallenge?.tag || '',
       imageUrl: imgSrc,
+      capturedAt: capturedAt || null,
+      latitude: latitude || null,
+      longitude: longitude || null,
     });
     myStardust = result.balance;
     updateLocalBalance(result.balance);

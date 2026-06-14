@@ -4,12 +4,13 @@ const PhotoGift = require('../models/PhotoGift');
 const requireAuth = require('../middleware/auth');
 const { ensureDemoContent } = require('../services/demoContent');
 const { addLedgerEntry } = require('../services/stardustService');
+const { parseObservedAt, buildPhotoVerificationHints } = require('../services/observationVerification');
 
 const router = express.Router();
 const DEFAULT_SPOTS = [
-    { name: 'Hanle, Ladakh', submissions: 12, stardust: 860 },
-    { name: 'Coorg Ridge', submissions: 8, stardust: 510 },
-    { name: 'Jaisalmer Dunes', submissions: 6, stardust: 390 },
+    { name: 'Hanle, Ladakh', submissions: 12, stardust: 860, avgDarkSky: 91 },
+    { name: 'Coorg Ridge', submissions: 8, stardust: 510, avgDarkSky: 76 },
+    { name: 'Jaisalmer Dunes', submissions: 6, stardust: 390, avgDarkSky: 82 },
 ];
 
 function initialsFor(name) {
@@ -35,11 +36,15 @@ function publicPhoto(photo) {
         cameraLabel: photo.cameraLabel || '',
         challengeTag: photo.challengeTag || '',
         date: photo.capturedAtLabel,
+        capturedAt: photo.capturedAt,
         imgUrl: photo.imageUrl,
         fullUrl: photo.fullImageUrl || photo.imageUrl,
         given: false,
         sourceType: photo.sourceType,
         featured: photo.featured,
+        location: photo.location || { lat: null, lng: null },
+        darkSkyScore: Number(photo.darkSkyScore || 0),
+        verificationHints: Array.isArray(photo.verificationHints) ? photo.verificationHints : [],
     };
 }
 
@@ -58,17 +63,32 @@ function buildDarkSkySpots(photos) {
     const counts = new Map();
 
     photos.forEach(photo => {
-        const name = String(photo.locationName || '').trim();
+        const name = String(photo.locationName || '').trim() || (
+            typeof photo.location?.lat === 'number' && typeof photo.location?.lng === 'number'
+                ? `${photo.location.lat.toFixed(2)}, ${photo.location.lng.toFixed(2)}`
+                : ''
+        );
         if (!name) return;
-        const existing = counts.get(name) || { name, submissions: 0, stardust: 0 };
+        const existing = counts.get(name) || { name, submissions: 0, stardust: 0, darkSkyTotal: 0 };
         existing.submissions += 1;
         existing.stardust += Number(photo.stardustTotal || 0);
+        existing.darkSkyTotal += Number(photo.darkSkyScore || 0);
         counts.set(name, existing);
     });
 
     const ranked = Array.from(counts.values())
-        .sort((a, b) => b.stardust - a.stardust || b.submissions - a.submissions)
+        .map(spot => ({
+            name: spot.name,
+            submissions: spot.submissions,
+            stardust: spot.stardust,
+            avgDarkSky: Math.round(spot.darkSkyTotal / Math.max(1, spot.submissions)),
+        }))
+        .sort((a, b) => b.avgDarkSky - a.avgDarkSky || b.stardust - a.stardust || b.submissions - a.submissions)
         .slice(0, 3);
+
+    if (!ranked.some(spot => spot.avgDarkSky > 0)) {
+        return DEFAULT_SPOTS;
+    }
 
     return ranked.length ? ranked : DEFAULT_SPOTS;
 }
@@ -87,12 +107,41 @@ router.get('/', async (req, res) => {
     });
 });
 
+router.get('/mine', requireAuth, async (req, res) => {
+    const photos = await Photo.find({ authorUserId: req.user._id }).sort({ createdAt: -1 }).limit(20).lean();
+    res.json({
+        photos: photos.map(publicPhoto),
+    });
+});
+
 router.post('/', requireAuth, async (req, res) => {
     const { title, category, description, imageUrl, locationName, cameraLabel, challengeTag } = req.body;
+    const latitude = req.body.latitude === '' || req.body.latitude === null || req.body.latitude === undefined
+        ? null
+        : Number(req.body.latitude);
+    const longitude = req.body.longitude === '' || req.body.longitude === null || req.body.longitude === undefined
+        ? null
+        : Number(req.body.longitude);
+    const capturedAt = parseObservedAt(req.body.capturedAt);
 
     if (!title || !category || !imageUrl) {
         return res.status(400).json({ message: 'title, category, and imageUrl are required' });
     }
+
+    if ((latitude !== null && !Number.isFinite(latitude)) || (longitude !== null && !Number.isFinite(longitude))) {
+        return res.status(400).json({ message: 'latitude and longitude must be valid numbers when provided' });
+    }
+
+    const { darkSkyScore, verificationHints } = await buildPhotoVerificationHints({
+        category,
+        capturedAt,
+        lat: latitude,
+        lng: longitude,
+    });
+
+    const capturedAtLabel = capturedAt
+        ? capturedAt.toLocaleString('en-IN', { dateStyle: 'medium', timeStyle: 'short' })
+        : 'Today';
 
     const photo = await Photo.create({
         title,
@@ -101,12 +150,19 @@ router.post('/', requireAuth, async (req, res) => {
         authorUserId: req.user._id,
         description: description || 'Uploaded by the SkyFolk community.',
         locationName: locationName || 'SkyFolk field log',
+        location: {
+            lat: latitude,
+            lng: longitude,
+        },
         cameraLabel: cameraLabel || '',
         challengeTag: challengeTag || '',
         imageUrl,
         fullImageUrl: imageUrl,
         sourceType: 'community',
-        capturedAtLabel: 'Today',
+        capturedAtLabel,
+        capturedAt,
+        darkSkyScore,
+        verificationHints,
     });
 
     await addLedgerEntry(req.user, 25, 'Photo upload reward', 'photo', photo._id.toString());

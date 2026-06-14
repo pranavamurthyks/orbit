@@ -111,6 +111,11 @@ function getIssSnapshot(satrec, date, lat, lng) {
     };
 }
 
+async function getIssObservationAt(date, lat, lng) {
+    const { satrec } = await getIssSatrec();
+    return getIssSnapshot(satrec, date, lat, lng);
+}
+
 function isVisiblePass(snapshot, date, lat, lng) {
     if (!snapshot) return false;
     if (snapshot.elevationDeg < MIN_VISIBLE_ELEVATION_DEG) return false;
@@ -223,4 +228,5 @@ async function getSkyOverview(lat, lng, screenTimeMinutes = 180) {
 
 module.exports = {
     getSkyOverview,
+    getIssObservationAt,
 };

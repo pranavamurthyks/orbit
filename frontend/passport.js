@@ -7,8 +7,10 @@ const converterInput = document.getElementById('screenTimeMinutes');
 const converterResult = document.getElementById('converterResult');
 const profileBtn = document.getElementById('profileBtn');
 const profileMenu = document.getElementById('profileMenu');
+const proofPhotoSelect = document.getElementById('entryProofPhoto');
 
 let skyOverview = null;
+let proofPhotos = [];
 
 function setStatus(message) {
   statusBox.textContent = message;
@@ -48,13 +50,43 @@ function renderEntries(entries) {
       <div class="entry-meta">
         <span class="chip">${esc(entry.type)}</span>
         <span class="chip">${esc(entry.locationName || 'SkyFolk field log')}</span>
+        <span class="chip">${entry.verified ? 'Verified' : 'Unverified'}</span>
         <span class="chip">+${entry.stardustAwarded} Stardust</span>
       </div>
-      <p>${esc(entry.notes || 'Verified observation saved to your Cosmic Passport.')}</p>
+      <p>${esc(entry.verificationSummary || entry.notes || 'Observation saved to your Cosmic Passport.')}</p>
       <span>${esc(entry.observedAtLabel || '')}</span>
     </article>
   `).join('');
 }
+
+function renderProofPhotos(photos) {
+  proofPhotos = Array.isArray(photos) ? photos : [];
+  proofPhotoSelect.innerHTML = '<option value="">No linked photo</option>' + proofPhotos.map(photo => `
+    <option value="${photo.id}">${esc(photo.title)}${photo.locationName ? ` • ${esc(photo.locationName)}` : ''}${photo.date ? ` • ${esc(photo.date)}` : ''}</option>
+  `).join('');
+}
+
+proofPhotoSelect.addEventListener('change', () => {
+  const photo = proofPhotos.find(item => item.id === proofPhotoSelect.value);
+  if (!photo) return;
+
+  if (!document.getElementById('entryLocation').value.trim() && photo.locationName) {
+    document.getElementById('entryLocation').value = photo.locationName;
+  }
+  if (!document.getElementById('entryLatitude').value && typeof photo.location?.lat === 'number') {
+    document.getElementById('entryLatitude').value = photo.location.lat.toFixed(6);
+  }
+  if (!document.getElementById('entryLongitude').value && typeof photo.location?.lng === 'number') {
+    document.getElementById('entryLongitude').value = photo.location.lng.toFixed(6);
+  }
+  if (!document.getElementById('entryObservedAt').value && photo.capturedAt) {
+    const date = new Date(photo.capturedAt);
+    if (!Number.isNaN(date.getTime())) {
+      date.setMinutes(date.getMinutes() - date.getTimezoneOffset());
+      document.getElementById('entryObservedAt').value = date.toISOString().slice(0, 16);
+    }
+  }
+});
 
 function renderLedger(ledger, balance) {
   document.getElementById('balanceCount').textContent = Number(balance || 0).toLocaleString('en-IN');
@@ -90,15 +122,17 @@ async function loadPassport() {
   setStatus('Loading your passport and stardust ledger...');
 
   try {
-    const [passport, stardust, sky] = await Promise.all([
+    const [passport, stardust, sky, myPhotos] = await Promise.all([
       api.get('/passport'),
       api.get('/stardust/me'),
       api.get('/sky/overview'),
+      api.get('/photos/mine').catch(() => ({ photos: [] })),
     ]);
 
     skyOverview = sky;
     renderEntries(passport.entries);
     renderLedger(stardust.ledger, stardust.balance);
+    renderProofPhotos(myPhotos.photos);
     document.getElementById('skyLabel').textContent = sky.sky.visibility;
     document.getElementById('moonLabel').textContent = sky.sky.moonPhase;
     renderConverter();
@@ -118,20 +152,48 @@ form.addEventListener('submit', async event => {
       title: document.getElementById('entryTitle').value.trim(),
       notes: document.getElementById('entryNotes').value.trim(),
       locationName: document.getElementById('entryLocation').value.trim(),
+      observedAt: document.getElementById('entryObservedAt').value || null,
       observedAtLabel: document.getElementById('entryTimeLabel').value.trim(),
+      latitude: document.getElementById('entryLatitude').value.trim() || null,
+      longitude: document.getElementById('entryLongitude').value.trim() || null,
+      proofPhotoId: proofPhotoSelect.value || null,
     };
 
-    await api.post('/passport', payload);
+    const result = await api.post('/passport', payload);
     form.reset();
     converterInput.value = '180';
+    setDefaultObservedAt();
     await loadPassport();
-    setStatus('Observation added to your Cosmic Passport.');
+    const checks = Array.isArray(result.checks) && result.checks.length ? ` ${result.checks[0]}` : '';
+    setStatus(`${result.entry.verificationSummary}${checks}`);
   } catch (error) {
     setStatus(error.message);
   }
 });
 
 converterInput.addEventListener('input', renderConverter);
+
+function setDefaultObservedAt() {
+  const now = new Date();
+  now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
+  document.getElementById('entryObservedAt').value = now.toISOString().slice(0, 16);
+}
+
+document.getElementById('entryUseLocation').addEventListener('click', () => {
+  const geoStatus = document.getElementById('entryGeoStatus');
+  if (!navigator.geolocation) {
+    geoStatus.textContent = 'This browser cannot provide your location.';
+    return;
+  }
+  geoStatus.textContent = 'Fetching your location...';
+  navigator.geolocation.getCurrentPosition((position) => {
+    document.getElementById('entryLatitude').value = position.coords.latitude.toFixed(6);
+    document.getElementById('entryLongitude').value = position.coords.longitude.toFixed(6);
+    geoStatus.textContent = 'Location attached from your device.';
+  }, () => {
+    geoStatus.textContent = 'Location access was denied.';
+  });
+});
 
 profileBtn.addEventListener('click', event => {
   event.stopPropagation();
@@ -147,4 +209,5 @@ document.addEventListener('keydown', event => {
   if (event.key === 'Escape') closeProfileMenu();
 });
 
+setDefaultObservedAt();
 loadPassport();
