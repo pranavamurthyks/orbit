@@ -72,6 +72,9 @@ Backend (Render)
  |--- SunCalc            Sun and moon position calculations
 ```
 
+![Alt Text](./arch.png)
+
+
 ---
 
 ## Tech stack
