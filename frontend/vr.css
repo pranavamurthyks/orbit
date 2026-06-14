@@ -662,6 +662,33 @@ button {
   z-index: 1;
 }
 
+.scene-reading {
+  position: relative;
+  z-index: 1;
+  font-family: var(--font-mono);
+  font-size: 0.8rem;
+  letter-spacing: 0.04em;
+  color: var(--teal);
+}
+
+.scene-detail {
+  position: relative;
+  z-index: 1;
+  font-size: 0.76rem;
+  line-height: 1.45;
+  color: rgba(217, 226, 255, 0.8);
+}
+
+.scene-source {
+  position: relative;
+  z-index: 1;
+  font-family: var(--font-mono);
+  font-size: 0.62rem;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: rgba(217, 226, 255, 0.52);
+}
+
 .scene-meta {
   display: flex;
   flex-wrap: wrap;

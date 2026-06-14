@@ -218,6 +218,11 @@ function buildMenu() {
       <span class="scene-icon" aria-hidden="true">${scene.icon}</span>
       <span class="scene-name">${scene.name}</span>
       <span class="scene-desc">${scene.desc}</span>
+      ${scene.metricValue ? `
+        <span class="scene-reading">${scene.metricValue}</span>
+        <span class="scene-detail">${scene.metricDetail || ''}</span>
+        <span class="scene-source">${scene.sourceLabel || ''}</span>
+      ` : ''}
       <span class="scene-meta">
         <span class="scene-mode">${scene.mode || 'Desktop + VR'}</span>
         <span class="scene-status">${scene.status || 'stable'}</span>
