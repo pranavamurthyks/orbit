@@ -261,6 +261,35 @@
     margin-top:6px;
     justify-self:start;
   }
+  .pointer-diagnostics{
+    display:grid;
+    grid-template-columns:repeat(auto-fit, minmax(180px, 1fr));
+    gap:10px;
+    margin-top:10px;
+  }
+  .pointer-diagnostic{
+    border:1px solid var(--hairline);
+    border-radius:12px;
+    padding:10px 12px;
+    background:rgba(0,0,0,.18);
+    display:grid;
+    gap:6px;
+  }
+  .pointer-diagnostic span{
+    font-family:var(--font-mono);
+    font-size:.68rem;
+    letter-spacing:.1em;
+    text-transform:uppercase;
+    color:var(--text-dim);
+  }
+  .pointer-diagnostic strong{
+    color:var(--cream);
+    font-family:var(--font-mono);
+    font-size:.84rem;
+  }
+  .pointer-diagnostic strong.good{ color:var(--teal); }
+  .pointer-diagnostic strong.warn{ color:var(--amber); }
+  .pointer-diagnostic strong.bad{ color:var(--alert); }
   @media (max-width: 820px){
     .pointer-grid{ grid-template-columns:1fr; }
     .pointer-dial{ margin:0 auto; }
@@ -1280,6 +1309,12 @@
           <div class="pointer-stat"><span>Approx. elevation</span><strong id="pointerElevation">-</strong></div>
           <div class="pointer-stat"><span>Turn cue</span><strong id="pointerTurn">Share location first</strong></div>
           <button class="loc-btn pointer-btn" id="pointerBtn" type="button">Enable Sky Pointer</button>
+          <div class="pointer-diagnostics" aria-label="Sky pointer readiness">
+            <div class="pointer-diagnostic"><span>Secure context</span><strong id="pointerSecureState">Checking...</strong></div>
+            <div class="pointer-diagnostic"><span>Geolocation</span><strong id="pointerGeoState">Checking...</strong></div>
+            <div class="pointer-diagnostic"><span>Motion sensor</span><strong id="pointerMotionState">Checking...</strong></div>
+            <div class="pointer-diagnostic"><span>Heading signal</span><strong id="pointerHeadingState">Waiting...</strong></div>
+          </div>
         </div>
       </div>
     </div>
@@ -1945,6 +1980,34 @@ let userLon = null;
 let deviceHeading = null;
 let pointerPermissionRequested = false;
 
+function setDiagnosticState(id, text, tone = '') {
+  const node = document.getElementById(id);
+  if (!node) return;
+  node.textContent = text;
+  node.className = tone;
+}
+
+function refreshPointerDiagnostics() {
+  setDiagnosticState('pointerSecureState', window.isSecureContext ? 'Ready' : 'Needs HTTPS', window.isSecureContext ? 'good' : 'warn');
+  setDiagnosticState('pointerGeoState', navigator.geolocation ? (userLat === null ? 'Available' : 'Locked') : 'Unavailable', navigator.geolocation ? 'good' : 'bad');
+
+  if (typeof DeviceOrientationEvent === 'undefined') {
+    setDiagnosticState('pointerMotionState', 'Unavailable', 'bad');
+  } else if (!pointerPermissionRequested && typeof DeviceOrientationEvent.requestPermission === 'function') {
+    setDiagnosticState('pointerMotionState', 'Permission needed', 'warn');
+  } else if (!pointerPermissionRequested) {
+    setDiagnosticState('pointerMotionState', 'Available', 'good');
+  } else {
+    setDiagnosticState('pointerMotionState', 'Streaming', 'good');
+  }
+
+  if (deviceHeading === null) {
+    setDiagnosticState('pointerHeadingState', pointerPermissionRequested ? 'Waiting for signal' : 'Idle', pointerPermissionRequested ? 'warn' : '');
+  } else {
+    setDiagnosticState('pointerHeadingState', `${Math.round(deviceHeading)}° live`, 'good');
+  }
+}
+
 function normalizeBearing(value) {
   return (value % 360 + 360) % 360;
 }
@@ -1982,6 +2045,7 @@ function updateSkyPointer(issLat, issLon) {
     turn.textContent = 'Share location first';
     arrow.style.transform = 'translate(-50%,-100%) rotate(0deg)';
     status.textContent = 'Share your location, then enable motion access on a phone to turn this into a live heading guide for the ISS.';
+    refreshPointerDiagnostics();
     return;
   }
 
@@ -1997,6 +2061,7 @@ function updateSkyPointer(issLat, issLon) {
   turn.textContent = deviceHeading === null ? 'Enable motion for live turns' : relativeTurnLabel(delta);
   arrow.style.transform = `translate(-50%,-100%) rotate(${arrowBearing}deg)`;
   status.textContent = `The ISS is about ${Math.round(distanceKm).toLocaleString()} km away from your position. On mobile, keep the phone upright and rotate until the turn cue settles.`;
+  refreshPointerDiagnostics();
 }
 
 function handleOrientation(event) {
@@ -2133,6 +2198,7 @@ document.getElementById('locBtn').addEventListener('click', () => {
   const note = document.getElementById('locNote');
   if (!navigator.geolocation) {
     note.textContent = "Your browser doesn't support location sharing.";
+    refreshPointerDiagnostics();
     return;
   }
   note.textContent = 'Locating you…';
@@ -2150,6 +2216,7 @@ document.getElementById('locBtn').addEventListener('click', () => {
     updateSkyPointer(lastIssLat, lastIssLon);
   }, () => {
     note.textContent = "Couldn't get your location.";
+    refreshPointerDiagnostics();
   });
 });
 
@@ -2165,6 +2232,7 @@ document.getElementById('pointerBtn').addEventListener('click', async () => {
   if (typeof DeviceOrientationEvent === 'undefined') {
     status.textContent = 'This browser does not expose device orientation. You can still use the target heading and elevation numbers.';
     updateSkyPointer(lastIssLat, lastIssLon);
+    refreshPointerDiagnostics();
     return;
   }
 
@@ -2173,6 +2241,7 @@ document.getElementById('pointerBtn').addEventListener('click', async () => {
       const result = await DeviceOrientationEvent.requestPermission();
       if (result !== 'granted') {
         status.textContent = 'Motion access was denied. You can still use the target heading and elevation numbers.';
+        refreshPointerDiagnostics();
         return;
       }
     }
@@ -2184,6 +2253,7 @@ document.getElementById('pointerBtn').addEventListener('click', async () => {
     updateSkyPointer(lastIssLat, lastIssLon);
   } catch (error) {
     status.textContent = 'Motion access failed. You can still use the target heading and elevation numbers.';
+    refreshPointerDiagnostics();
   }
 });
 
@@ -2222,6 +2292,7 @@ document.addEventListener('keydown', event => {
    INIT
    ====================================================================== */
 tickClock();
+refreshPointerDiagnostics();
 updateISS();
 animate();
 </script>

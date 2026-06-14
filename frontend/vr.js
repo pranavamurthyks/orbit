@@ -93,6 +93,13 @@ let stars = [];
 let mouse = { x: -999, y: -999 };
 let resolvedConstellations = [];
 
+function updateReadinessValue(valueId, detailId, value, detail) {
+  const valueNode = document.getElementById(valueId);
+  const detailNode = document.getElementById(detailId);
+  if (valueNode) valueNode.textContent = value;
+  if (detailNode) detailNode.textContent = detail;
+}
+
 const CONSTELLATIONS = [
   { stars: [[0.08,0.20],[0.11,0.27],[0.09,0.34],[0.14,0.30],[0.19,0.30],[0.17,0.22],[0.20,0.38]], lines: [[0,1],[1,2],[1,3],[3,4],[4,5],[4,6]] },
   { stars: [[0.75,0.08],[0.80,0.14],[0.85,0.09],[0.90,0.15],[0.95,0.10]], lines: [[0,1],[1,2],[2,3],[3,4]] },
@@ -107,9 +114,61 @@ const CONSTELLATIONS = [
 document.addEventListener('DOMContentLoaded', () => {
   initOrbitBackground();
   buildMenu();
+  runReadinessChecks();
   wireGlobalControls();
   loadImmersiveOverview();
 });
+
+async function runReadinessChecks() {
+  const hasXR = Boolean(navigator.xr && typeof navigator.xr.isSessionSupported === 'function');
+  if (!hasXR) {
+    updateReadinessValue(
+      'xrSupportValue',
+      'xrSupportDetail',
+      'WebXR unavailable',
+      'This browser does not expose navigator.xr. Desktop viewing still works, but immersive headset mode is unavailable here.'
+    );
+  } else {
+    try {
+      const immersiveVr = await navigator.xr.isSessionSupported('immersive-vr');
+      updateReadinessValue(
+        'xrSupportValue',
+        'xrSupportDetail',
+        immersiveVr ? 'Immersive VR supported' : 'No immersive headset mode',
+        immersiveVr
+          ? 'This browser reports immersive-vr support, so a compatible headset should be able to enter the scene.'
+          : 'navigator.xr exists, but immersive-vr is not supported on this device/browser combination.'
+      );
+    } catch {
+      updateReadinessValue(
+        'xrSupportValue',
+        'xrSupportDetail',
+        'XR probe failed',
+        'The browser exposed navigator.xr, but the support check itself failed.'
+      );
+    }
+  }
+
+  const hasOrientation = typeof DeviceOrientationEvent !== 'undefined';
+  const coarsePointer = window.matchMedia('(pointer: coarse)').matches;
+  updateReadinessValue(
+    'xrMotionValue',
+    'xrMotionDetail',
+    hasOrientation ? (coarsePointer ? 'Mobile sensor path available' : 'Desktop pointer mode') : 'No orientation sensor API',
+    hasOrientation
+      ? coarsePointer
+        ? 'This device exposes device-orientation APIs and uses a coarse touch pointer, which is the expected phone/tablet path.'
+        : 'This device exposes orientation APIs, but it looks more like a desktop/laptop pointer environment.'
+      : 'This browser does not expose DeviceOrientationEvent, so phone-style sensor validation is unavailable here.'
+  );
+
+  updateReadinessValue(
+    'xrRuntimeValue',
+    'xrRuntimeDetail',
+    'Scene booting',
+    'Waiting for A-Frame to finish loading the scene before reporting runtime XR state.'
+  );
+}
 
 function initOrbitBackground() {
   if (!starCanvas || !starCtx) return;
@@ -294,6 +353,12 @@ function wireGlobalControls() {
   // We wait for the scene to load before attaching so the element exists.
   const sceneEl = document.getElementById('vr-scene');
   sceneEl.addEventListener('loaded', () => {
+    updateReadinessValue(
+      'xrRuntimeValue',
+      'xrRuntimeDetail',
+      'Scene ready',
+      'A-Frame finished loading. Desktop mode is ready now, and a supported headset can try Enter VR.'
+    );
     const vrBackBtn = document.getElementById('vr-back-btn');
     if (vrBackBtn) vrBackBtn.addEventListener('click', returnToMenu);
   });
@@ -306,16 +371,35 @@ function wireGlobalControls() {
     const isDesktopFullscreen = xrSession && xrSession.environmentBlendMode === 'opaque-desktop';
     const presenting = sceneEl.renderer && sceneEl.renderer.xr && sceneEl.renderer.xr.isPresenting;
     if (presenting && !isDesktopFullscreen) {
+      updateReadinessValue(
+        'xrRuntimeValue',
+        'xrRuntimeDetail',
+        'Immersive XR active',
+        'A real XR session is presenting. In-headset HUD and controllers should now be driving the experience.'
+      );
       document.body.classList.add('in-vr');
       const vrHud = document.getElementById('vr-hud');
       if (vrHud) vrHud.setAttribute('visible', true);
       // Show the reticle cursor for gaze-clicking the in-VR HUD
       const reticle = document.querySelector('[cursor]');
       if (reticle) reticle.setAttribute('visible', true);
+    } else {
+      updateReadinessValue(
+        'xrRuntimeValue',
+        'xrRuntimeDetail',
+        'Fullscreen desktop mode',
+        'A-Frame entered its non-headset fullscreen VR mode. The scene is active, but this is not a true immersive headset session.'
+      );
     }
   });
 
   sceneEl.addEventListener('exit-vr', () => {
+    updateReadinessValue(
+      'xrRuntimeValue',
+      'xrRuntimeDetail',
+      'Returned to mission control',
+      'The XR/fullscreen session ended and the page returned to the standard mission-select UI.'
+    );
     document.body.classList.remove('in-vr');
     const vrHud = document.getElementById('vr-hud');
     if (vrHud) vrHud.setAttribute('visible', false);

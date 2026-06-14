@@ -548,6 +548,36 @@ button {
   color: var(--text-muted);
 }
 
+.readiness-panel {
+  width: min(100%, 1040px);
+  margin: 0 auto;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 16px;
+}
+
+.readiness-card {
+  padding: 16px 18px;
+  border-radius: 12px;
+  border: 1px solid rgba(150,170,255,0.18);
+  background: rgba(6,9,30,0.58);
+  box-shadow: 0 12px 38px rgba(0,0,0,0.18);
+}
+
+.readiness-card strong {
+  display: block;
+  font-size: 0.98rem;
+  color: var(--text);
+  margin-bottom: 6px;
+}
+
+.readiness-card p {
+  margin: 0;
+  font-size: 0.8rem;
+  line-height: 1.5;
+  color: var(--text-muted);
+}
+
 /* -------------------------------------------------------------
    Scene selection grid + "targeting reticle" cards
    ------------------------------------------------------------- */
@@ -863,6 +893,10 @@ body.scene-active .navbar {
   }
 
   .mission-brief {
+    grid-template-columns: 1fr;
+  }
+
+  .readiness-panel {
     grid-template-columns: 1fr;
   }
 }
