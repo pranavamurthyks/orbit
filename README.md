@@ -2,8 +2,7 @@
 
 A personalized space companion that tells you what is happening in space right now, explains it in plain English via AI, and connects you with people nearby to watch it together.
 
-**Frontend:** https://orbit-frontend-v2.vercel.app  
-**Backend API:** https://orbit-fkec.onrender.com
+**Deployed App:** https://orbit-frontend-v2.vercel.app  
 
 ---
 
