@@ -22,6 +22,16 @@ function initialsFor(name) {
         .toUpperCase() || 'SF';
 }
 
+function distanceKm(lat1, lng1, lat2, lng2) {
+    const DEG = Math.PI / 180;
+    const R = 6371;
+    const dLat = (lat2 - lat1) * DEG;
+    const dLng = (lng2 - lng1) * DEG;
+    const a = Math.sin(dLat / 2) ** 2 +
+        Math.cos(lat1 * DEG) * Math.cos(lat2 * DEG) * Math.sin(dLng / 2) ** 2;
+    return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+}
+
 function publicPhoto(photo) {
     return {
         id: photo._id.toString(),
@@ -60,29 +70,80 @@ function buildWeeklyChallenge() {
 }
 
 function buildDarkSkySpots(photos) {
-    const counts = new Map();
+    const geoClusters = [];
+    const namedCounts = new Map();
 
     photos.forEach(photo => {
-        const name = String(photo.locationName || '').trim() || (
-            typeof photo.location?.lat === 'number' && typeof photo.location?.lng === 'number'
-                ? `${photo.location.lat.toFixed(2)}, ${photo.location.lng.toFixed(2)}`
-                : ''
-        );
-        if (!name) return;
-        const existing = counts.get(name) || { name, submissions: 0, stardust: 0, darkSkyTotal: 0 };
+        const lat = typeof photo.location?.lat === 'number' ? photo.location.lat : null;
+        const lng = typeof photo.location?.lng === 'number' ? photo.location.lng : null;
+        const locationName = String(photo.locationName || '').trim();
+        const stardust = Number(photo.stardustTotal || 0);
+        const darkSkyScore = Number(photo.darkSkyScore || 0);
+        const category = String(photo.category || '').trim();
+
+        if (lat !== null && lng !== null) {
+            let cluster = geoClusters.find(item => distanceKm(lat, lng, item.lat, item.lng) <= 75);
+            if (!cluster) {
+                cluster = {
+                    lat,
+                    lng,
+                    submissions: 0,
+                    stardust: 0,
+                    darkSkyTotal: 0,
+                    nameCounts: new Map(),
+                    categoryCounts: new Map(),
+                };
+                geoClusters.push(cluster);
+            }
+
+            cluster.lat = (cluster.lat * cluster.submissions + lat) / (cluster.submissions + 1);
+            cluster.lng = (cluster.lng * cluster.submissions + lng) / (cluster.submissions + 1);
+            cluster.submissions += 1;
+            cluster.stardust += stardust;
+            cluster.darkSkyTotal += darkSkyScore;
+            if (locationName) {
+                cluster.nameCounts.set(locationName, (cluster.nameCounts.get(locationName) || 0) + 1);
+            }
+            if (category) {
+                cluster.categoryCounts.set(category, (cluster.categoryCounts.get(category) || 0) + 1);
+            }
+            return;
+        }
+
+        if (!locationName) return;
+        const existing = namedCounts.get(locationName) || { name: locationName, submissions: 0, stardust: 0, darkSkyTotal: 0 };
         existing.submissions += 1;
-        existing.stardust += Number(photo.stardustTotal || 0);
-        existing.darkSkyTotal += Number(photo.darkSkyScore || 0);
-        counts.set(name, existing);
+        existing.stardust += stardust;
+        existing.darkSkyTotal += darkSkyScore;
+        namedCounts.set(locationName, existing);
     });
 
-    const ranked = Array.from(counts.values())
+    const geoRanked = geoClusters.map((spot) => {
+        const topName = Array.from(spot.nameCounts.entries()).sort((a, b) => b[1] - a[1])[0]?.[0];
+        const topCategory = Array.from(spot.categoryCounts.entries()).sort((a, b) => b[1] - a[1])[0]?.[0] || '';
+        return {
+            name: topName || `${spot.lat.toFixed(2)}, ${spot.lng.toFixed(2)}`,
+            submissions: spot.submissions,
+            stardust: spot.stardust,
+            avgDarkSky: Math.round(spot.darkSkyTotal / Math.max(1, spot.submissions)),
+            lat: Number(spot.lat.toFixed(4)),
+            lng: Number(spot.lng.toFixed(4)),
+            topCategory,
+        };
+    });
+
+    const namedRanked = Array.from(namedCounts.values())
         .map(spot => ({
             name: spot.name,
             submissions: spot.submissions,
             stardust: spot.stardust,
             avgDarkSky: Math.round(spot.darkSkyTotal / Math.max(1, spot.submissions)),
-        }))
+            lat: null,
+            lng: null,
+            topCategory: '',
+        }));
+
+    const ranked = [...geoRanked, ...namedRanked]
         .sort((a, b) => b.avgDarkSky - a.avgDarkSky || b.stardust - a.stardust || b.submissions - a.submissions)
         .slice(0, 3);
 

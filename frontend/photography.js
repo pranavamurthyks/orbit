@@ -447,6 +447,7 @@ function renderCommunityMeta() {
     <div class="spot-item">
       <strong>${spot.name}</strong>
       <span>${spot.submissions} shots · ${spot.stardust} ✦ · dark-sky ${spot.avgDarkSky || 0}/100</span>
+      <span>${spot.lat !== null && spot.lng !== null ? `${Number(spot.lat).toFixed(2)}, ${Number(spot.lng).toFixed(2)}` : 'Location label only'}${spot.topCategory ? ` · ${formatCategory(spot.topCategory)}` : ''}</span>
     </div>
   `).join('');
 }

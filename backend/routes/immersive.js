@@ -28,11 +28,6 @@ router.get('/overview', async (req, res) => {
                 'location.lng': { $ne: null },
             }).lean(),
         ]);
-        const now = new Date();
-        const dayOfYear = Math.floor((now - new Date(now.getFullYear(), 0, 0)) / 86400000);
-        const cmeTravelDays = Number((1.6 + Math.max(0, 180 - spaceWeather.latestSunspotNumber) / 120).toFixed(1));
-        const supernovaStageHours = 6 + (dayOfYear % 18);
-        const gravitationalWaveSeconds = 0.24 + ((dayOfYear % 11) * 0.03);
         const watchPartyCount = sessions.reduce((sum, session) => {
             if (typeof session.location?.lat !== 'number' || typeof session.location?.lng !== 'number') {
                 return sum;
@@ -135,14 +130,19 @@ router.get('/overview', async (req, res) => {
                 nextVisiblePassMinutes,
                 watchPartyCount,
                 relativisticOffsetMicroseconds,
-                cmeTravelDays,
-                supernovaStageHours,
-                gravitationalWaveSeconds: Number(gravitationalWaveSeconds.toFixed(2)),
+                cmeTravelDays: spaceWeather.cmeTravelDays,
                 solarCycle: spaceWeather.solarCycle,
                 skyVisibility: sky.sky.visibility,
                 orbitUnit: sky.sky.orbitUnit,
                 latestSunspotNumber: spaceWeather.latestSunspotNumber,
                 latestSolarCycleTag: spaceWeather.latestTag,
+                latestF107: spaceWeather.latestF107,
+                solarWindSpeedKmS: spaceWeather.solarWindSpeedKmS,
+                geomagneticKp: spaceWeather.geomagneticKp,
+                xrayFluxClass: spaceWeather.xrayFluxClass,
+                xrayFluxWatts: spaceWeather.xrayFluxWatts,
+                auroraBand: spaceWeather.auroraBand,
+                spaceWeatherSource: spaceWeather.source,
             },
             highlights: [
                 {
@@ -154,13 +154,13 @@ router.get('/overview', async (req, res) => {
                 },
                 {
                     label: 'Solar weather',
-                    value: `SSN ${spaceWeather.latestSunspotNumber.toFixed(1)}`,
-                    detail: `NOAA solar-cycle data currently reads as ${spaceWeather.solarCycle} (${spaceWeather.latestTag}).`,
+                    value: `Kp ${spaceWeather.geomagneticKp.toFixed(1)} · ${spaceWeather.xrayFluxClass}`,
+                    detail: `Sunspot number ${spaceWeather.latestSunspotNumber.toFixed(1)}, F10.7 ${spaceWeather.latestF107.toFixed(1)}, ${spaceWeather.auroraBand}.`,
                 },
                 {
-                    label: 'Relativity tie-in',
-                    value: `${relativisticOffsetMicroseconds} µs`,
-                    detail: 'Astronaut clocks really do diverge. That grounding should carry through the immersive stack.',
+                    label: 'CME corridor',
+                    value: `${spaceWeather.cmeTravelDays} day transit`,
+                    detail: `At about ${spaceWeather.solarWindSpeedKmS} km/s, Sun-to-Earth plasma would take roughly ${spaceWeather.cmeTravelDays} days. Source: ${spaceWeather.source}.`,
                 },
             ],
             iss: {

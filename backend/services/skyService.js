@@ -1,6 +1,7 @@
 const axios = require('axios');
 const SunCalc = require('suncalc');
 const satellite = require('satellite.js');
+const { FALLBACK_ISS_TLE } = require('./fallbackSpaceData');
 
 const ISS_CATNR = 25544;
 const TLE_URL = `https://celestrak.org/NORAD/elements/gp.php?CATNR=${ISS_CATNR}&FORMAT=TLE`;
@@ -11,6 +12,7 @@ let tleCache = {
     expiresAt: 0,
     name: 'ISS (ZARYA)',
     satrec: null,
+    source: 'uninitialized',
 };
 
 function clamp(value, min, max) {
@@ -66,23 +68,33 @@ async function getIssSatrec() {
         return tleCache;
     }
 
-    const response = await axios.get(TLE_URL, { timeout: 8000 });
-    const lines = String(response.data || '')
-        .trim()
-        .split(/\r?\n/)
-        .map(line => line.trim())
-        .filter(Boolean);
+    try {
+        const response = await axios.get(TLE_URL, { timeout: 8000 });
+        const lines = String(response.data || '')
+            .trim()
+            .split(/\r?\n/)
+            .map(line => line.trim())
+            .filter(Boolean);
 
-    if (lines.length < 3) {
-        throw new Error('Unable to parse ISS TLE');
+        if (lines.length < 3) {
+            throw new Error('Unable to parse ISS TLE');
+        }
+
+        const [name, line1, line2] = lines;
+        tleCache = {
+            expiresAt: Date.now() + TLE_TTL_MS,
+            name,
+            satrec: satellite.twoline2satrec(line1, line2),
+            source: 'live CelesTrak TLE',
+        };
+    } catch {
+        tleCache = {
+            expiresAt: Date.now() + TLE_TTL_MS,
+            name: FALLBACK_ISS_TLE.name,
+            satrec: satellite.twoline2satrec(FALLBACK_ISS_TLE.line1, FALLBACK_ISS_TLE.line2),
+            source: `bundled ISS TLE snapshot (${FALLBACK_ISS_TLE.snapshotTag})`,
+        };
     }
-
-    const [name, line1, line2] = lines;
-    tleCache = {
-        expiresAt: Date.now() + TLE_TTL_MS,
-        name,
-        satrec: satellite.twoline2satrec(line1, line2),
-    };
     return tleCache;
 }
 
@@ -166,7 +178,7 @@ async function findNextPass(lat, lng, now = new Date()) {
 
 async function getSkyOverview(lat, lng, screenTimeMinutes = 180) {
     const now = new Date();
-    const { name, satrec } = await getIssSatrec();
+    const { name, satrec, source } = await getIssSatrec();
     const currentIss = getIssSnapshot(satrec, now, lat, lng);
     if (!currentIss) {
         throw new Error('Unable to compute ISS position');
@@ -217,6 +229,7 @@ async function getSkyOverview(lat, lng, screenTimeMinutes = 180) {
             raceWidget: buildRaceWidget(currentIss.speedKmS),
             relativisticOffsetMicroseconds: ((Date.now() / 1000) * 0.000011).toFixed(6),
             speedKmH: currentIss.speedKmH,
+            dataSource: source,
         },
         converter: {
             screenTimeMinutes: minutes,

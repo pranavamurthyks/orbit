@@ -1404,7 +1404,7 @@
         title: 'VR + simulations',
         value: latestImmersive?.telemetry ? `${latestImmersive.telemetry.missionsOnline} active scenes` : 'Mission feed offline',
         detail: latestImmersive?.telemetry
-          ? `${latestImmersive.telemetry.cmeTravelDays} day CME transit • ${latestImmersive.telemetry.solarCycle} solar cycle • drift ${latestImmersive.telemetry.relativisticOffsetMicroseconds} µs`
+          ? `${latestImmersive.telemetry.cmeTravelDays} day CME transit • Kp ${latestImmersive.telemetry.geomagneticKp} • ${latestImmersive.telemetry.xrayFluxClass} flare band`
           : 'Black hole lensing, pulsars, supernovae, and solar storm scenes.',
         href: 'vr.html',
         linkLabel: 'Launch immersive'
