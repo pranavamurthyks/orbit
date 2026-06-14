@@ -1,6 +1,6 @@
 (function () {
   
-  const API_BASE = localStorage.getItem('orbitApiBase') || 'https://orbit-fkec.onrender.com';
+  const API_BASE = localStorage.getItem('orbitApiBase') || 'https://orbit-fkec.onrender.com/api';
   function getToken() {
     return localStorage.getItem('orbitAuthToken');
   }
