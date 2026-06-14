@@ -32,10 +32,7 @@
       headers.Authorization = `Bearer ${token}`;
     }
 
-    const response = await fetch(`${API_BASE}${path}`, {
-      ...options,
-      headers,
-    });
+  const API_BASE = localStorage.getItem('orbitApiBase') || 'https://orbit-fkec.onrender.com';
 
     const data = await response.json().catch(() => ({}));
     if (!response.ok) {
